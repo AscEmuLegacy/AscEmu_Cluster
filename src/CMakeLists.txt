@@ -8,6 +8,7 @@ endif()
 # add our executable related folders
 add_subdirectory(shared)
 add_subdirectory(logonserver)
+add_subdirectory(realm)
 add_subdirectory(world)
 add_subdirectory(collision)
 
