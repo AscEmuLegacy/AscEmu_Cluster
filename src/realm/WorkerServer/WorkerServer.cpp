@@ -107,30 +107,38 @@ void WorkerServer::HandleRegisterWorker(WorldPacket & pck)
     /* send a packed packet of all online players to this server */
     sClientMgr.SendPackedClientInfo(this);
 
-    /* allocate initial instances for this worker */
-    sClusterMgr.AllocateInitialInstances(this, maps);
-
-    std::vector<uint32> result;
-    result.reserve(10);
+    std::vector<uint32> result2;
+    result2.reserve(maps.size());
 
     // Filter Maps for This Worker
-    for (std::vector<uint32>::iterator itr = instancedmaps.begin(); itr != instancedmaps.end(); ++itr)
+    for (std::vector<uint32>::iterator itr = maps.begin(); itr != maps.end(); ++itr)
+                result2.push_back(*itr);
+
+    //Append Maps
+    for (std::vector<uint32>::iterator itr = result2.begin(); itr != result2.end(); ++itr)
     {
-        if (sMySQLStore.GetWorldMapInfo(*itr)->workerid == GetID())
-            result.push_back(*itr);
+        Servers* i = new Servers;
+        i->Mapid = (*itr);
+        i->workerServer = this;
+        sClusterMgr.Maps.insert(std::pair<uint32, Servers*>((*itr), i));
+        LogDetail("ClusterMgr", "Allocating map %u to worker %u", (*itr), GetID());
     }
 
-    //Append Instances
+    std::vector<uint32> result;
+    result.reserve(instancedmaps.size());
+
+    // Filter Instanced Maps for This Worker
+    for (std::vector<uint32>::iterator itr = instancedmaps.begin(); itr != instancedmaps.end(); ++itr)
+            result.push_back(*itr);
+
+    //Append Instanced Maps
     for (std::vector<uint32>::iterator itr2 = result.begin(); itr2 != result.end(); ++itr2)
     {
-
-        Instance* i = new Instance;
-        i->InstanceId = 0;
-        i->MapId = (*itr2);
-        i->MapCount = 0;
-        i->Server = this;
-        sClusterMgr.InstancedMaps.insert(std::pair<uint32, Instance*>((*itr2), i));
-        LogDetail("ClusterMgr", "Allocating instance prototype on map %u to worker %u", (*itr2), GetID());
+        Servers* i = new Servers;
+        i->Mapid  = (*itr2);
+        i->workerServer = this;
+        sClusterMgr.Maps.insert(std::pair<uint32, Servers*>((*itr2), i));
+        LogDetail("ClusterMgr", "Allocating map %u to worker %u", (*itr2), GetID());
     }
 }
 
@@ -174,9 +182,9 @@ void WorkerServer::HandlePlayerLogout(WorldPacket & pck)
 void WorkerServer::HandleTeleportRequest(WorldPacket & pck)
 {
     WorldPacket data(ISMSG_TELEPORT_RESULT, 100);
-    RPlayerInfo * pi;
-    Session * s;
-    Instance * dest;
+    RPlayerInfo* pi;
+    Session* s;
+    WorkerServer* dest;
     uint32 mapid, sessionid, instanceid;
 
     /* this packet is only used upon changing main maps! */
@@ -189,11 +197,7 @@ void WorkerServer::HandleTeleportRequest(WorldPacket & pck)
         ASSERT(pi);
 
         /* find the destination server */
-        dest = sClusterMgr.GetInstanceByMapId(mapid);
-
-        //try and find a prototype instance, and its server
-        if (dest == NULL)
-            dest = sClusterMgr.GetPrototypeInstanceByMapId(mapid);
+        dest = sClusterMgr.GetServerByMapId(mapid);
 
         /* server up? */
         if (dest == NULL)
@@ -209,11 +213,11 @@ void WorkerServer::HandleTeleportRequest(WorldPacket & pck)
             pck >> vec >> vec.o;
 
             pi->MapId = mapid;
-            pi->InstanceId = dest->InstanceId;
+            pi->InstanceId = instanceid;
             pi->PositionX = vec.x;
             pi->PositionY = vec.y;
 
-            if (dest->Server == s->GetServer())
+            if (dest == s->GetServer())
             {
                 /* we're not changing servers, the new instance is on the same server */
                 data << sessionid << uint8(1) << mapid << instanceid << vec << vec.o;
@@ -224,7 +228,7 @@ void WorkerServer::HandleTeleportRequest(WorldPacket & pck)
                 /* notify the old server to pack the player info together to send to the new server, and delete the player */
                 data << sessionid << uint8(0) << mapid << instanceid << vec << vec.o;
                 //cache this to next server and switch servers when were ready :P
-                s->SetNextServer(dest->Server);
+                s->SetNextServer(dest);
                 SendPacket(&data);
             }
 

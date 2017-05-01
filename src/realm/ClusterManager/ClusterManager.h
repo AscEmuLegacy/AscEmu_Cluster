@@ -6,65 +6,37 @@ This file is released under the MIT license. See README-MIT for more information
 #define MAX_WORKER_SERVERS 100
 #define MAX_SINGLE_MAPID 600
 
-struct Instance
+struct Servers
 {
-    uint32 InstanceId;
-    uint32 MapId;
-    uint32 MapCount; //used for load balancing for things like battleground servers
-    WorkerServer * Server;
+    uint32 Mapid;
+    WorkerServer* workerServer;
 };
 
 #define IS_INSTANCE(a) (((a)>1)&&((a)!=530))
-#define IS_MAIN_MAP(a) (((a)<2)||((a)==530))
+#define IS_MAIN_MAP(a) (((a)<2)||((a)==530) ||((a)==571))
 
 class ClusterMgr : public Singleton<ClusterMgr>
 {
-    typedef std::map<uint32, Instance*> InstanceMap;
+    typedef std::map<uint32, Servers*> WorkerServerMap;
 
     RWLock m_lock;
-    WorkerServer * WorkerServers[MAX_WORKER_SERVERS];
-    Instance * SingleInstanceMaps[MAX_SINGLE_MAPID];
+    WorkerServer* WorkerServers[MAX_WORKER_SERVERS];
+    WorkerServerMap workerServers;
 
-    InstanceMap Instances;
-    uint32 m_maxInstanceId;
     uint32 m_maxWorkerServer;
 
 public:
-    //this is the prototype for instanced maps that havn't been created yet :P
-    //yes, its a multimap, you can have multiple servers per map (battleground servers)
-    std::multimap<uint32, Instance*> InstancedMaps;
+    std::multimap<uint32, Servers*> Maps;
 
     ClusterMgr();
 
     void OnServerDisconnect(WorkerServer* s);
 
-    WorkerServer * GetServerByInstanceId(uint32 InstanceId);
-    WorkerServer * GetServerByMapId(uint32 MapId);
+    WorkerServer* GetServerByMapId(uint32 MapId);
+    WorkerServer* GetAnyWorkerServer();
+    WorkerServer* CreateWorkerServer(WorkerServerSocket * s);
 
-    Instance * GetInstanceByInstanceId(uint32 InstanceId);
-    Instance * GetInstanceByMapId(uint32 MapId);
-    Instance * GetAnyInstance();
-    Instance * GetPrototypeInstanceByMapId(uint32 MapId);
-
-    WorkerServer * CreateWorkerServer(WorkerServerSocket * s);
-    _inline WorkerServer * GetWorkerServer(uint32 Id) { return (Id < MAX_WORKER_SERVERS) ? WorkerServers[Id] : 0; }
-    void AllocateInitialInstances(WorkerServer * server, std::vector<uint32>& preferred);
-
-    // find the worker server with the least load for the new instance
-    WorkerServer * GetWorkerServerForNewInstance();
-
-    /* create new instance, or a main map */
-    Instance * CreateInstance(uint32 MapId, WorkerServer * server);
-
-    /* create new instance based on template, or a saved instance */
-    Instance * CreateInstance(uint32 InstanceId, uint32 MapId);
-
-    /* gets the instance struct by instance id */
-    Instance * GetInstance(uint32 InstanceId)
-    {
-        InstanceMap::iterator itr = Instances.find(InstanceId);
-        return (itr == Instances.end()) ? 0 : itr->second;
-    }
+    _inline WorkerServer* GetWorkerServer(uint32 Id) { return (Id < MAX_WORKER_SERVERS) ? WorkerServers[Id] : 0; }
 
     /* distribute packet to all worker servers */
     _inline void DistributePacketToAll(WorldPacket * data) { DistributePacketToAll(data, 0); }

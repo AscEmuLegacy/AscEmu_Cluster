@@ -203,7 +203,7 @@ void Session::HandlePlayerLogin(WorldPacket & pck)
 {
     WorldPacket data(SMSG_CHARACTER_LOGIN_FAILED, 30);
     LocationVector LoginCoord;
-    Instance * dest;
+    WorkerServer * dest;
     ASSERT(!m_currentPlayer);
     uint64 guid;
     pck >> guid;
@@ -308,36 +308,11 @@ void Session::HandlePlayerLogin(WorldPacket & pck)
 
     if (IS_MAIN_MAP(m_currentPlayer->MapId))
     {
-        /* we're on a continent, try to find the world server we're going to */
-        dest = sClusterMgr.GetInstanceByMapId(m_currentPlayer->MapId);
-    }
-    else
-    {
-        /* we're in an instanced map, try to find the world server we're going to */
-        //dest = sClusterMgr.GetInstanceByInstanceId(m_currentPlayer->InstanceId);
-        dest = sClusterMgr.GetPrototypeInstanceByMapId(m_currentPlayer->MapId);
-
-        if (!dest)
-        {
-            /* our instance has been deleted or no longer valid */
-            m_currentPlayer->MapId = m_currentPlayer->RecoveryMapId;
-            LoginCoord = m_currentPlayer->RecoveryPosition;
-
-            /* obtain instance */
-            dest = sClusterMgr.GetInstanceByMapId(m_currentPlayer->MapId);
-            if (dest)
-            {
-                data.SetOpcode(SMSG_NEW_WORLD);
-                data << m_currentPlayer->MapId
-                    << m_currentPlayer->RecoveryPosition
-                    << float(0);
-                SendPacket(&data);
-                data.clear();
-            }
-        }
+        /* try to find the world server we're going to */
+        dest = sClusterMgr.GetServerByMapId(m_currentPlayer->MapId);
     }
 
-    if (dest == NULL || dest->Server == NULL)
+    if (dest == NULL)
     {
         /* world server is down */
         data << uint8(0x3D);
@@ -347,17 +322,17 @@ void Session::HandlePlayerLogin(WorldPacket & pck)
         return;
     }
 
-    /* log the player into that WS */
+    /* log the player into that WorkerServer */
     data.SetOpcode(ISMSG_PLAYER_LOGIN);
 
     /* append info */
-    data << uint32(guid) << uint32(dest->MapId) << uint32(dest->InstanceId);
+    data << uint32(guid) << uint32(m_currentPlayer->MapId) << uint32(InstanceId);
 
 
     /* append the account information */
     data << uint32(AccountId) << uint32(Account_Flags) << uint32(m_sessionId)
         << GMPermissions << m_accountName << m_build << Class << m_socket;
 
-    dest->Server->SendPacket(&data);
-    m_nextServer = dest->Server;
+    dest->SendPacket(&data);
+    m_nextServer = dest;
 }

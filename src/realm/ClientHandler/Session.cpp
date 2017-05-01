@@ -132,7 +132,7 @@ void Session::HandleCharacterCreate(WorldPacket & recv_data)
     bool forward_to_Server = true;
     if (forward_to_Server)
     {
-        Instance* i = sClusterMgr.GetAnyInstance();
+        WorkerServer* i = sClusterMgr.GetAnyWorkerServer();
 
         if (i == NULL)
         {
@@ -148,7 +148,7 @@ void Session::HandleCharacterCreate(WorldPacket & recv_data)
         data << uint32(recv_data.size());
         data.resize(10 + recv_data.size());
         memcpy((void*)(data.contents() + 12), recv_data.contents(), recv_data.size());
-        i->Server->SendPacket(&data);
+        i->SendPacket(&data);
     }
 }
 
