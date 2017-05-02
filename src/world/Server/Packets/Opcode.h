@@ -38,3 +38,4 @@ static inline std::string getOpcodeName(uint32_t opcode)
 
     return "UNKNOWN_OPCODE";
 }
+

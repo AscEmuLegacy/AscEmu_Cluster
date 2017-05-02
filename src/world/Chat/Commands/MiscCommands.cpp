@@ -921,7 +921,7 @@ bool ChatHandler::HandleSummonCommand(const char* args, WorldSession* m_session)
         }
         Player* plr = m_session->GetPlayer();
         if (plr->GetMapMgr() == chr->GetMapMgr())
-            chr->_Relocate(plr->GetMapId(), plr->GetPosition(), false, false, plr->GetInstanceID());
+            sClusterInterface.RequestTransfer(plr, plr->GetMapId(), plr->GetInstanceID(), plr->GetPosition());
         else
         {
             sEventMgr.AddEvent(chr, &Player::EventPortToGM, plr, 0, 1, 1, EVENT_FLAG_DO_NOT_EXECUTE_IN_WORLD_CONTEXT);

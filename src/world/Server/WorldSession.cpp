@@ -100,9 +100,6 @@ WorldSession::~WorldSession()
             delete[]sAccountData[x].data;
     }
 
-    if (_socket)
-        _socket->SetSession(0);
-
     if (m_loggingInPlayer)
         m_loggingInPlayer->SetSession(NULL);
 
@@ -112,9 +109,6 @@ WorldSession::~WorldSession()
 uint8 WorldSession::Update(uint32 InstanceID)
 {
     m_currMsTime = getMSTime();
-
-    if (!((++_updatecount) % 2) && _socket)
-        _socket->UpdateQueuedPackets();
 
     WorldPacket* packet;
     OpcodeHandler* Handler;
@@ -262,6 +256,15 @@ void WorldSession::LogoutPlayer(bool Save)
 
         objmgr.RemovePlayer(_player);
         _player->ok_to_remove = true;
+
+        //if socket is NULL, we can assume the realmserver took care of it :P
+        if (_socket != NULL)
+        {
+            WorldPacket data(ICMSG_PLAYER_LOGOUT, 4);
+            data << _socket->GetSessionId();
+            data << _player->GetLowGUID();
+            sClusterInterface.SendPacket(&data);
+        }
 
         sHookInterface.OnLogout(pPlayer);
         if (_player->DuelingWith)
@@ -1321,4 +1324,26 @@ void WorldSession::QueuePacket(WorldPacket* packet) {
 void WorldSession::Disconnect() {
     if (_socket && _socket->IsConnected())
         _socket->Disconnect();
+}
+
+void WorldSession::HandlePingOpcode(WorldPacket& recvPacket)
+{
+    uint32 ping;
+    /*if (recvPacket.size() < 4)
+    {
+    LOG_ERROR("Socket closed due to incomplete ping packet.");
+    Disconnect();
+    return;
+    }*/
+
+    recvPacket >> ping;
+    recvPacket >> _latency;
+
+    _latency = _latency;
+    m_lastPing = (uint32)UNIXTIME;
+
+    // reset the move time diff calculator, don't worry it will be re-calculated next movement packet.
+    m_clientTimeDelay = 0;
+
+    OutPacket(SMSG_PONG, 4, &ping);
 }

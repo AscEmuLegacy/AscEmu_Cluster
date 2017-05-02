@@ -312,19 +312,13 @@ bool Master::Run(int argc, char** argv)
 
     //ThreadPool.Gobble();
 
-    /* Connect to realmlist servers / logon servers */
-    new LogonCommHandler();
-    sLogonCommHandler.Startup();
+    new ClusterInterface;
+    sClusterInterface.ConnectToRealmServer();
 
-    // Create listener
-    ListenSocket<WorldSocket> * ls = new ListenSocket<WorldSocket>(worldConfig.listen.listenHost.c_str(), worldConfig.listen.listenPort);
-    bool listnersockcreate = ls->IsOpen();
-#ifdef WIN32
-    if (listnersockcreate)
-        ThreadPool.ExecuteTask(ls);
-#endif
-
-    ShutdownThreadPools(listnersockcreate);
+    while (!m_stopEvent)
+    {
+        sClusterInterface.Update();
+    }
 
     _UnhookSignals();
 
@@ -353,8 +347,6 @@ bool Master::Run(int argc, char** argv)
     cs->terminate();
     cs = NULL;
 
-    ls->Close();
-
     CloseConsoleListener();
     sWorld.saveAllPlayersToDb();
 
@@ -366,8 +358,6 @@ bool Master::Run(int argc, char** argv)
 
     bServerShutdown = true;
     ThreadPool.Shutdown();
-
-    delete ls;
 
     sWorld.logoutAllPlayers();
 

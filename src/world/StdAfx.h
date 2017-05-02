@@ -70,6 +70,12 @@
 #endif
 #include "Storage/DBC/DBCStores.h"
 
+// Cluster
+#define _GAME
+#include "../realm/WorkerServer/WorkerOpcodes.h"
+#include "../world/Cluster/WorkerServerClient.h"
+#include "../world/Cluster/ClusterInterface.h"
+
 //Movement
 #include "Movement/UnitMovementManager.hpp"
 #include "Movement/Spline/MovementSpline.hpp"
@@ -207,4 +213,5 @@
 #include "Management/WorldStates.h"
 #include "Units/Players/PlayerClasses.hpp"
 #include "Map/MapManagementGlobals.hpp"
+
 #endif

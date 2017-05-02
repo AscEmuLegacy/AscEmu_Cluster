@@ -46,86 +46,31 @@ enum OUTPACKET_RESULT
 //////////////////////////////////////////////////////////////////////////////////////////
 /// \brief Main network code functions, handles reading/writing of all packets.
 //////////////////////////////////////////////////////////////////////////////////////////
-class SERVER_DECL WorldSocket : public Socket
+class SERVER_DECL WorldSocket
 {
-    // MIT
-    private:
-        uint8_t AuthDigest[20];
-#if VERSION_STRING != Cata
-        uint32_t mClientBuild;
-#else
-        uint16_t mClientBuild;
-#endif
+public:
+    WorldSocket(uint32 sessionid);
+    ~WorldSocket();
 
-    public:
-        void HandleWoWConnection(WorldPacket* recvPacket);
-        void SendAuthResponseError(uint8_t code);
+    void Disconnect();
+    bool IsConnected();
+    inline std::string GetRemoteIP() { return std::string(inet_ntoa(m_address.sin_addr)); }
+    inline uint32 GetRemotePort() { return ntohs(m_address.sin_port); }
 
-        void OnConnectTwo();
+    inline void SendPacket(WorldPacket* packet) { if (!packet) return; OutPacket(packet->GetOpcode(), (uint16)packet->size(), (packet->size() ? (const void*)packet->contents() : NULL)); }
+    inline void SendPacket(StackBufferBase* packet) { if (!packet) return; OutPacket(packet->GetOpcode(), packet->GetSize(), (packet->GetSize() ? (const void*)packet->GetBufferPointer() : NULL)); }
 
-    // MIT End
-    // AGPL
-    public:
+    void  OutPacket(uint16 opcode, size_t len, const void* data);
+    OUTPACKET_RESULT _OutPacket(uint16 opcode, size_t len, const void* data);
 
-        WorldSocket(SOCKET fd);
-        ~WorldSocket();
+    inline WorldSession* GetSession() { return mSession; }
+    inline uint32 GetSessionId() { return m_sessionId; }
 
-        // vs8 fix - send null on empty buffer
-        inline void SendPacket(WorldPacket* packet) { if (!packet) return; OutPacket(packet->GetOpcode(), packet->size(), (packet->size() ? (const void*)packet->contents() : NULL)); }
-        inline void SendPacket(StackBufferBase* packet) { if (!packet) return; OutPacket(packet->GetOpcode(), packet->GetSize(), (packet->GetSize() ? (const void*)packet->GetBufferPointer() : NULL)); }
-
-#if VERSION_STRING != Cata
-        void OutPacket(uint16 opcode, size_t len, const void* data);
-        OUTPACKET_RESULT _OutPacket(uint16 opcode, size_t len, const void* data);
-#else
-        void OutPacket(uint32 opcode, size_t len, const void* data);
-        OUTPACKET_RESULT _OutPacket(uint32 opcode, size_t len, const void* data);
-#endif
-
-        inline uint32 GetLatency() { return _latency; }
-
-        void Authenticate();
-        void InformationRetreiveCallback(WorldPacket & recvData, uint32 requestid);
-
-        void UpdateQueuePosition(uint32 Position);
-
-        void OnRead();
-        void OnConnect();
-        void OnDisconnect();
-
-        inline void SetSession(WorldSession* session) { mSession = session; }
-        inline WorldSession* GetSession() { return mSession; }
-        bool Authed;
-
-        void UpdateQueuedPackets();
-
-    protected:
-
-        void _HandleAuthSession(WorldPacket* recvPacket);
-        void _HandlePing(WorldPacket* recvPacket);
-
-    private:
-
-        uint32 mOpcode;
-        uint32 mRemaining;
-        uint32 mSize;
-        uint32 mSeed;
-        uint32 mClientSeed;
-        
-        uint32 mRequestID;
-
-        WorldSession* mSession;
-        WorldPacket* pAuthenticationPacket;
-        FastQueue<WorldPacket*, DummyLock> _queue;
-        Mutex queueLock;
-
-        WowCrypt _crypt;
-        uint32 _latency;
-        bool mQueued;
-        bool m_nagleEanbled;
-        std::string* m_fullAccountName;
+protected:
+    WorldSession* mSession;
+    uint32 m_sessionId;
+    sockaddr_in m_address;
 };
-
 
 static inline void FastGUIDPack(ByteBuffer & buf, const uint64 & oldguid)
 {

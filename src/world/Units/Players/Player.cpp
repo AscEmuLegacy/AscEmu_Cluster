@@ -525,3 +525,8 @@ void Player::sendReportToGmMessage(std::string playerName, std::string damageLog
 
     sWorld.sendMessageToOnlineGms(gm_ann.c_str());
 }
+
+void Player::Destructor()
+{
+    delete this;
+}

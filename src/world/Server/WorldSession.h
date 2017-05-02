@@ -844,6 +844,8 @@ class SERVER_DECL WorldSession
         void HandleWorldportOpcode(WorldPacket& recv_data);
         void HandleWrapItemOpcode(WorldPacket& recv_data);
 
+        void HandlePingOpcode(WorldPacket* recv_data);
+
         // VoicChat
         // Zyres: this feature will be not implemented in the near future!
         //void HandleEnableMicrophoneOpcode(WorldPacket& recv_data);
@@ -900,6 +902,7 @@ class SERVER_DECL WorldSession
         void Unhandled(WorldPacket& recv_data);
 
     public:
+        bool ClusterTryPlayerLogin(uint32 Guid, uint8 _class, uint32 ClientBuild, std::string GMPermissions, uint32 Account_Flags);
 
         void SendInventoryList(Creature* pCreature);
         void SendTrainerList(Creature* pCreature);

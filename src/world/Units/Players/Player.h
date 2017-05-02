@@ -19,6 +19,8 @@
  */
 #pragma once
 
+#define _GAME
+
 #include "Units/Players/PlayerDefines.hpp"
 #include "Server/Packets/Handlers/PlayerCache.h"
 #include "Server/Definitions.h"
@@ -32,7 +34,6 @@
 #include "Units/Creatures/AIInterface.h" //?? what?
 #include "WorldConf.h"
 #include "Management/AuctionHouse.h"
-
 
 class QuestLogEntry;
 struct BGScore;
@@ -1209,6 +1210,8 @@ private:
         AIInterface* waypointunit;
 
         uint32 m_nextSave;
+        uint32 m_nextRealmSave;
+
         //Tutorials
         uint32 GetTutorialInt(uint32 intId);
         void SetTutorialInt(uint32 intId, uint32 value);
@@ -1272,6 +1275,14 @@ private:
         bool m_bgIsQueued;
         uint32 m_bgQueueType;
         uint32 m_bgQueueInstanceId;
+
+        // Clustering
+        void EventClusterMapChange(uint32 mapid, uint32 instanceid, LocationVector location);
+        void HandleClusterRemove();
+        void Destructor();
+
+        void PackPlayerData(ByteBuffer & data);
+        bool UnpackPlayerData(ByteBuffer & data);
 
     protected:
 
@@ -1372,9 +1383,7 @@ private:
         // GameObject commands
         GameObject * GetSelectedGo();
 
-        uint64 m_GM_SelectedGO;
-
-        void _Relocate(uint32 mapid, const LocationVector & v, bool sendpending, bool force_new_world, uint32 instance_id);
+        uint64 m_GM_SelectedGO;      
 
         void AddItemsToWorld();
         void RemoveItemsFromWorld();
@@ -1569,6 +1578,32 @@ private:
 
         bool HasAreaExplored(::DBC::Structures::AreaTableEntry const*);
         bool HasOverlayUncovered(uint32 overlayID);
+
+        RPlayerInfo * UpdateRPlayerInfo(RPlayerInfo * pRPlayer, bool newRplr = false)
+        {
+            pRPlayer->Guid = GetLowGUID();
+            pRPlayer->AccountId = GetSession()->GetAccountId();
+            pRPlayer->Name = GetName();
+            pRPlayer->Level = getLevel();
+            pRPlayer->GuildId = GetGuildId();
+            pRPlayer->PositionX = GetPositionX();
+            pRPlayer->PositionY = GetPositionY();
+            pRPlayer->ZoneId = m_zoneId;
+            pRPlayer->Race = getRace();
+            pRPlayer->Class = getClass();
+            pRPlayer->Gender = getGender();
+            pRPlayer->Latency = GetSession()->GetLatency();
+            pRPlayer->GMPermissions = GetSession()->GetPermissions();
+            pRPlayer->Account_Flags = GetSession()->GetFlags();
+            pRPlayer->InstanceId = GetInstanceID();
+            pRPlayer->MapId = GetMapId();
+            pRPlayer->iInstanceType = iInstanceType;
+            pRPlayer->ClientBuild = GetSession()->GetClientBuild();
+            pRPlayer->Team = m_team;
+            if (newRplr)
+                pRPlayer->references = 1;
+            return pRPlayer;
+        }
 
         /////////////////////////////////////////////////////////////////////////////////////////
         //  PVP Stuff

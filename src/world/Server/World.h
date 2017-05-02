@@ -103,8 +103,9 @@ class SERVER_DECL World : public Singleton<World>, public EventableObject, publi
         RWLock mSessionLock;
 
     public:
-
+        WorldSession* FindSession(uint32 id);
         void addSession(WorldSession* worldSession);
+        void removeSession(uint32 id);
 
         WorldSession* getSessionByAccountId(uint32_t accountId);
         WorldSession* getSessionByAccountName(std::string accountName);
@@ -131,6 +132,7 @@ class SERVER_DECL World : public Singleton<World>, public EventableObject, publi
     public:
 
         void addGlobalSession(WorldSession* worldSession);
+        void removeGlobalSession(WorldSession* session);
         void updateGlobalSession(uint32_t diff);
 
     //////////////////////////////////////////////////////////////////////////////////////////

@@ -746,34 +746,37 @@ void WorldSession::HandleWhoOpcode(WorldPacket& recv_data)
     uint32 sent_count = 0;
     uint32 total_count = 0;
 
-    PlayerStorageMap::const_iterator itr, iend;
-    Player* plr;
+    std::unordered_map<uint32, RPlayerInfo*>::const_iterator itr, iend;
+    RPlayerInfo* plr;
     uint32 lvl;
     bool add;
     WorldPacket data;
     data.SetOpcode(SMSG_WHO);
     data << uint64(0);
 
-    objmgr._playerslock.AcquireReadLock();
-    iend = objmgr._players.end();
-    itr = objmgr._players.begin();
-    while (itr != iend && sent_count < 49)   // WhoList should display 49 names not including your own
+    sClusterInterface.m_onlinePlayerMapMutex.Acquire();
+    iend = sClusterInterface._onlinePlayers.end();
+    itr = sClusterInterface._onlinePlayers.begin();
+    LogNotice("WORLD", "Recvd CMSG_WHO Message, there are currently %u _onlinePlayers", sClusterInterface._onlinePlayers.size());
+    while (itr != iend && sent_count < 50)
     {
         plr = itr->second;
         ++itr;
-
-        if (!plr->GetSession() || !plr->IsInWorld())
-            continue;
-
-        if (!worldConfig.server.showGmInWhoList && !HasGMPermissions())
+        bool queriedPlayerIsGM = false;
+        if (plr->GMPermissions.find("a"))
         {
-            if (plr->GetSession()->HasGMPermissions())
-                continue;
+            queriedPlayerIsGM = true;
         }
 
-        // Team check
-        if (!gm && plr->GetTeam() != team && !plr->GetSession()->HasGMPermissions() && !worldConfig.player.isInterfactionMiscEnabled)
+        if (!worldConfig.server.showGmInWhoList && !gm && queriedPlayerIsGM)
+        {
             continue;
+        }
+
+        if (!gm && plr->Team != team && !queriedPlayerIsGM)
+        {
+            continue;
+        }
 
         ++total_count;
 
@@ -781,24 +784,18 @@ void WorldSession::HandleWhoOpcode(WorldPacket& recv_data)
         add = true;
 
         // Chat name
-        if (cname && chatname != *plr->GetNameString())
+        if (cname && chatname != plr->Name)
             continue;
 
-        // Guild name
-        if (gname)
-        {
-            if (!plr->GetGuild() || strcmp(plr->GetGuild()->GetGuildName(), guildname.c_str()) != 0)
-                continue;
-        }
-
         // Level check
-        lvl = plr->getLevel();
-
+        lvl = plr->Level;
         if (min_level && max_level)
         {
             // skip players outside of level range
             if (lvl < min_level || lvl > max_level)
+            {
                 continue;
+            }
         }
 
         // Zone id compare
@@ -808,7 +805,7 @@ void WorldSession::HandleWhoOpcode(WorldPacket& recv_data)
             add = false;
             for (i = 0; i < zone_count; ++i)
             {
-                if (zones[i] == plr->GetZoneId())
+                if (zones[i] == plr->ZoneId)
                 {
                     add = true;
                     break;
@@ -816,8 +813,10 @@ void WorldSession::HandleWhoOpcode(WorldPacket& recv_data)
             }
         }
 
-        if (!((class_mask >> 1) & plr->getClassMask()) || !((race_mask >> 1) & plr->getRaceMask()))
+        if (!(class_mask & plr->getClassMask()) || !(race_mask & plr->getRaceMask()))
+        {
             add = false;
+        }
 
         // skip players that fail zone check
         if (!add)
@@ -830,7 +829,7 @@ void WorldSession::HandleWhoOpcode(WorldPacket& recv_data)
             add = false;
             for (i = 0; i < name_count; ++i)
             {
-                if (!strnicmp(names[i].c_str(), plr->GetName(), names[i].length()))
+                if (!strnicmp(names[i].c_str(), plr->Name.c_str(), names[i].length()))
                 {
                     add = true;
                     break;
@@ -843,21 +842,26 @@ void WorldSession::HandleWhoOpcode(WorldPacket& recv_data)
 
         // if we're here, it means we've passed all testing
         // so add the names :)
-        data << plr->GetName();
-
-        if (plr->m_playerInfo->guild)
-            data << plr->m_playerInfo->guild->GetGuildName();
+        data << plr->Name; //needs to be .c_str() ??
+        if (plr->GuildId)
+        {
+            Guild * guild = objmgr.GetGuild(plr->GuildId);
+            if (guild)
+                data << objmgr.GetGuild(plr->GuildId)->GetGuildName();
+            else
+                data << uint8(0);	   // Guild name
+        }
         else
             data << uint8(0);	   // Guild name
 
-        data << plr->getLevel();
-        data << uint32(plr->getClass());
-        data << uint32(plr->getRace());
-        data << plr->getGender();
-        data << uint32(plr->GetZoneId());
+        data << plr->Level;
+        data << uint32(plr->Class);
+        data << uint32(plr->Race);
+        data << plr->Gender;
+        data << uint32(plr->ZoneId);
         ++sent_count;
     }
-    objmgr._playerslock.ReleaseReadLock();
+    sClusterInterface.m_onlinePlayerMapMutex.Release();
     data.wpos(0);
     data << sent_count;
     data << sent_count;

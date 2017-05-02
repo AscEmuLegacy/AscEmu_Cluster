@@ -217,10 +217,11 @@ void World::updateAllTrafficTotals()
     for (auto playerStorage = objmgr._players.begin(); playerStorage != objmgr._players.end(); ++playerStorage)
     {
         WorldSocket* socket = playerStorage->second->GetSession()->GetSocket();
-        if (!socket || !socket->IsConnected() || socket->IsDeleted())
+        if (!socket || !socket->IsConnected() /*|| socket->IsDeleted()*/)
             continue;
 
-        socket->PollTraffic(&sent, &recieved);
+        // We have a simplified WorldSocket due to Clustering redo this
+        //socket->PollTraffic(&sent, &recieved);
 
         TrafficIn += (static_cast<double>(recieved));
         TrafficOut += (static_cast<double>(sent));
@@ -260,6 +261,35 @@ float World::getRAMUsage()
 
 //////////////////////////////////////////////////////////////////////////////////////////
 // Session functions
+WorldSession* World::FindSession(uint32 id)
+{
+    mSessionLock.AcquireReadLock();
+    WorldSession* ret = 0;
+    activeSessionMap::const_iterator itr = mActiveSessionMapStore.find(id);
+
+    if (itr != mActiveSessionMapStore.end())
+        ret = itr->second;
+
+    mSessionLock.ReleaseReadLock();
+
+    return ret;
+}
+
+void World::removeSession(uint32 id)
+{
+    mSessionLock.AcquireWriteLock();
+
+    activeSessionMap::iterator itr = mActiveSessionMapStore.find(id);
+
+    if (itr != mActiveSessionMapStore.end())
+    {
+        delete itr->second;
+        mActiveSessionMapStore.erase(itr);
+    }
+
+    mSessionLock.ReleaseWriteLock();
+}
+
 void World::addSession(WorldSession* worldSession)
 {
     ARCEMU_ASSERT(worldSession != NULL);
@@ -454,6 +484,15 @@ void World::addGlobalSession(WorldSession* worldSession)
     globalSessionMutex.Release();
 }
 
+void World::removeGlobalSession(WorldSession* session)
+{
+    ARCEMU_ASSERT(session != NULL);
+
+    globalSessionMutex.Acquire();
+    globalSessionSet.erase(session);
+    globalSessionMutex.Release();
+}
+
 void World::updateGlobalSession(uint32_t diff)
 {
     std::list<WorldSession*> ErasableSessions;
@@ -490,53 +529,7 @@ void World::updateGlobalSession(uint32_t diff)
 // Session queue
 void World::updateQueuedSessions(uint32_t diff)
 {
-    if (diff >= getQueueUpdateTimer())
-    {
-        mQueueUpdateTimer = settings.server.queueUpdateInterval;
-        queueMutex.Acquire();
-
-        if (getQueuedSessions() == 0)
-        {
-            queueMutex.Release();
-            return;
-        }
-
-        while (mActiveSessionMapStore.size() < settings.getPlayerLimit() && getQueuedSessions())
-        {
-            QueuedWorldSocketList::iterator iter = mQueuedSessions.begin();
-            WorldSocket* QueuedSocket = *iter;
-            mQueuedSessions.erase(iter);
-
-            if (QueuedSocket->GetSession())
-            {
-                QueuedSocket->GetSession()->deleteMutex.Acquire();
-                QueuedSocket->Authenticate();
-                QueuedSocket->GetSession()->deleteMutex.Release();
-            }
-        }
-
-        if (getQueuedSessions() == 0)
-        {
-            queueMutex.Release();
-            return;
-        }
-
-        QueuedWorldSocketList::iterator iter = mQueuedSessions.begin();
-        uint32_t queuPosition = 1;
-        while (iter != mQueuedSessions.end())
-        {
-            (*iter)->UpdateQueuePosition(queuPosition++);
-            if (iter == mQueuedSessions.end())
-                break;
-            else
-                ++iter;
-        }
-        queueMutex.Release();
-    }
-    else
-    {
-        mQueueUpdateTimer -= diff;
-    }
+    // Removed Due to Clustering
 }
 
 uint32_t World::addQueuedSocket(WorldSocket* Socket)

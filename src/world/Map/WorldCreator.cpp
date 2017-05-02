@@ -682,6 +682,9 @@ void InstanceMgr::_CreateMap(uint32 mapid)
     if (inf == nullptr)
         return;
 
+    if (!inf->cluster_loads_map)
+        return;
+
     if (m_maps[mapid] != NULL)
         return;
 

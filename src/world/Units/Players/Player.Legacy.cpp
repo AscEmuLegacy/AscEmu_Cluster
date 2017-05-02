@@ -835,6 +835,7 @@ bool Player::Create(WorldPacket& data)
         return false;
     }
 
+#ifdef CLUSTERING
     // check that the account can create TBC characters, if we're making some
     if (race >= RACE_BLOODELF && !(m_session->_accountFlags & ACCOUNT_FLAG_XPACK_01))
     {
@@ -848,6 +849,7 @@ bool Player::Create(WorldPacket& data)
         m_session->Disconnect();
         return false;
     }
+#endif
 
     m_mapId = info->mapId;
     SetZoneId(info->zoneId);
@@ -908,20 +910,34 @@ bool Player::Create(WorldPacket& data)
     SetFaction(info->factiontemplate);
 
     if (class_ == DEATHKNIGHT)
-        SetTalentPointsForAllSpec(worldConfig.player.deathKnightStartTalentPoints); // Default is 0 in case you do not want to modify it
+    {
+        m_specs[0].SetTP(worldConfig.player.deathKnightStartTalentPoints);
+        m_specs[1].SetTP(worldConfig.player.deathKnightStartTalentPoints);
+        SetUInt32Value(PLAYER_CHARACTER_POINTS1, worldConfig.player.deathKnightStartTalentPoints);
+    }
     else
-        SetTalentPointsForAllSpec(0);
+    {
+        m_specs[0].SetTP(0);
+        m_specs[1].SetTP(0);
+        SetUInt32Value(PLAYER_CHARACTER_POINTS1, 0);
+    }
+
     if (class_ != DEATHKNIGHT || worldConfig.player.playerStartingLevel > 55)
     {
         setLevel(worldConfig.player.playerStartingLevel);
         if (worldConfig.player.playerStartingLevel >= 10 && class_ != DEATHKNIGHT)
-            SetTalentPointsForAllSpec(worldConfig.player.playerStartingLevel - 9);
+        {
+            m_specs[0].SetTP(worldConfig.player.playerStartingLevel - 9);
+            m_specs[1].SetTP(worldConfig.player.playerStartingLevel - 9);
+            SetUInt32Value(PLAYER_CHARACTER_POINTS1, worldConfig.player.playerStartingLevel - 9);
+        }
     }
     else
     {
         setLevel(55);
         SetNextLevelXp(148200);
     }
+
     UpdateGlyphs();
 
     SetPrimaryProfessionPoints(worldConfig.player.maxProfessions);
@@ -1180,6 +1196,16 @@ void Player::Update(unsigned long time_passed)
 
     //Autocast Spells in Area
     CastSpellArea();
+
+    //Distribute our Infos to the RealmServer send  our Infos every 10 seconds.
+    if (mstime >= m_nextRealmSave)
+    {
+        // Set our new Infos
+        UpdateRPlayerInfo(sClusterInterface.GetPlayer(GetLowGUID()), false);
+        //Send Infos
+        sClusterInterface.SendPlayerInfo(GetLowGUID());
+        m_nextRealmSave = getMSTime() + 10000;
+    }
 
     if (m_pvpTimer)
     {
@@ -3047,6 +3073,8 @@ void Player::LoadFromDBProc(QueryResultVector & results)
     // set race dbc
     myRace = sChrRacesStore.LookupEntry(getRace());
     myClass = sChrClassesStore.LookupEntry(getClass());
+
+#ifdef CLUSTERING
     if (!myClass || !myRace)
     {
         // bad character
@@ -3054,6 +3082,7 @@ void Player::LoadFromDBProc(QueryResultVector & results)
         RemovePendingPlayer();
         return;
     }
+#endif
 
     if (myRace->team_id == 7)
     {
@@ -7245,72 +7274,6 @@ void Player::RemovePlayerPet(uint32 pet_number)
     CharacterDatabase.Execute("DELETE FROM playerpetspells WHERE ownerguid=%u AND petnumber=%u", GetLowGUID(), pet_number);
 }
 
-void Player::_Relocate(uint32 mapid, const LocationVector & v, bool sendpending, bool force_new_world, uint32 instance_id)
-{
-    //this func must only be called when switching between maps!
-    WorldPacket data(41);
-    if (sendpending && mapid != m_mapId && force_new_world)
-    {
-        data.SetOpcode(SMSG_TRANSFER_PENDING);
-
-        data << mapid;
-
-        m_session->SendPacket(&data);
-    }
-    bool sendpacket = (mapid == m_mapId);
-    //Dismount before teleport and before being removed from world,
-    //otherwise we may spawn the active pet while not being in world.
-    Dismount();
-
-    if (!sendpacket || force_new_world)
-    {
-        uint32 status = sInstanceMgr.PreTeleport(mapid, this, instance_id);
-        if (status != INSTANCE_OK)
-        {
-            data.Initialize(SMSG_TRANSFER_ABORTED);
-
-            data << uint32(mapid);
-            data << uint32(status);
-
-            m_session->SendPacket(&data);
-
-            return;
-        }
-
-        if (instance_id)
-            m_instanceId = instance_id;
-
-        if (IsInWorld())
-        {
-            RemoveFromWorld();
-        }
-
-        data.Initialize(SMSG_NEW_WORLD);
-
-        data << uint32(mapid);
-        data << v;
-        data << float(v.o);
-
-        m_session->SendPacket(&data);
-
-        SetMapId(mapid);
-
-    }
-    else
-        SendTeleportAckPacket(v.x, v.y, v.z, v.o);
-
-    SetPlayerStatus(TRANSFER_PENDING);
-    m_sentTeleportPosition = v;
-    SetPosition(v);
-    if (sendpacket)
-    {
-        SendTeleportPacket(v.x, v.y, v.z, v.o);
-    }
-    SpeedCheatReset();
-
-    z_axisposition = 0.0f;
-}
-
 void Player::AddItemsToWorld()
 {
     Item* pItem;
@@ -8476,7 +8439,7 @@ void Player::EventTeleportTaxi(uint32 mapid, float x, float y, float z)
         RepopAtGraveyard(GetPositionX(), GetPositionY(), GetPositionZ(), GetMapId());
         return;
     }
-    _Relocate(mapid, LocationVector(x, y, z), (mapid == GetMapId() ? false : true), true, 0);
+    sClusterInterface.RequestTransfer(this, mapid, GetInstanceID(), LocationVector(x, y, z));
     ForceZoneUpdate();
 }
 
@@ -8664,7 +8627,16 @@ bool Player::SafeTeleport(uint32 MapID, uint32 InstanceID, const LocationVector 
         m_bg->RemovePlayer(this, false);
     }
 
-    _Relocate(MapID, vec, true, instance, InstanceID);
+    if (instance)
+    {
+        WorldPacket data(SMSG_TRANSFER_PENDING, 4);
+        data << uint32(MapID);
+        GetSession()->SendPacket(&data);
+        sClusterInterface.RequestTransfer(static_cast<Player*>(this), MapID, InstanceID, vec);
+    }
+    else
+        sClusterInterface.RequestTransfer(static_cast<Player*>(this), MapID, InstanceID, vec);
+
     SpeedCheatReset();
     ForceZoneUpdate();
     return true;
