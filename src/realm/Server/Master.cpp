@@ -9,7 +9,7 @@ This file is released under the MIT license. See README-MIT for more information
 Database* sCharSQL;
 Database* sWorldSQL;
 Arcemu::Threading::AtomicBoolean mrunning(true);
-ConfigMgr Config;
+ConfigMgr Conf;
 
 createFileSingleton(Master);
 bool running;
@@ -90,6 +90,8 @@ bool Master::Run(int argc, char ** argv)
 {
     time_t curTime;
 
+    AscLog.InitalizeLogFiles("realm");
+
     if (!LoadRealmConfiguration())
     {
         AscLog.~AscEmuLog();
@@ -107,6 +109,18 @@ bool Master::Run(int argc, char ** argv)
     /* Print Banner */
     PrintBanner();
 
+    LogDetail("Database", "Connecting to database...");
+
+    sCharSQL = NULL;
+    sWorldSQL = NULL;
+
+    if (!StartCharDb() || !StartWorldDb())
+    {
+        AscLog.~AscEmuLog();
+        return false;
+    }
+
+    LogDetail("Database", "Connections established.");
     LogDetail("Database", "Interface Created.");
 
     ThreadPool.Startup();
@@ -116,22 +130,6 @@ bool Master::Run(int argc, char ** argv)
 
     LogDetail("Realmserver", "Loading DBC files...");
     // Todo we need it later
-
-
-    LogDetail("Database", "Connecting to database...");
-
-    sCharSQL = NULL;
-    sWorldSQL = NULL;
-
-    if (!StartCharDb() || !StartWorldDb())
-    {
-        AscLog.~AscEmuLog();
-        ThreadPool.Shutdown();
-        _UnhookSignals();
-        return false;
-    }
-
-    LogDetail("Database", "Connections established.");
 
     new ClusterMgr;
     new ClientMgr;
@@ -175,8 +173,8 @@ bool Master::Run(int argc, char ** argv)
     new LogonCommHandler();
     sLogonCommHandler.Startup();
 
-    std::string host = Config.MainConfig.getStringDefault("Listen", "Host", "0.0.0.0");
-    int wsport = Config.MainConfig.getIntDefault("Listen", "WorldServerPort", 8129);
+    std::string host = Conf.MainConfig.getStringDefault("Listen", "Host", "0.0.0.0");
+    int wsport = Conf.MainConfig.getIntDefault("Listen", "WorldServerPort", 8129);
 
 
     LogNotice("Network", "Network Subsystem Started.");
@@ -292,12 +290,12 @@ void OnCrash(bool Terminate)
 
 bool Master::StartCharDb()
 {
-    std::string dbHostname = Config.MainConfig.getStringDefault("CharacterDatabase", "Hostname", "");
-    std::string dbUsername = Config.MainConfig.getStringDefault("CharacterDatabase", "Username", "");
-    std::string dbPassword = Config.MainConfig.getStringDefault("CharacterDatabase", "Password", "");
-    std::string dbDatabase = Config.MainConfig.getStringDefault("CharacterDatabase", "Name", "");
-
-    int dbPort = Config.MainConfig.getIntDefault("CharacterDatabase", "Port", 3306);
+    std::string dbHostname = Conf.MainConfig.getStringDefault("CharacterDatabase", "Hostname", "");
+    std::string dbUsername = Conf.MainConfig.getStringDefault("CharacterDatabase", "Username", "");
+    std::string dbPassword = Conf.MainConfig.getStringDefault("CharacterDatabase", "Password", "");
+    std::string dbDatabase = Conf.MainConfig.getStringDefault("CharacterDatabase", "Name", "");
+    int connections = Conf.MainConfig.getIntDefault("CharacterDatabase", "Connections", 5);
+    int dbPort = Conf.MainConfig.getIntDefault("CharacterDatabase", "Port", 3306);
 
     // Configure Main Database
     bool existsUsername = !dbUsername.empty();
@@ -334,9 +332,11 @@ bool Master::StartCharDb()
         return false;
     }
 
+    sCharSQL = Database::CreateDatabaseInterface();
+
     // Initialize it
     if (!sCharSQL->Initialize(dbHostname.c_str(), (unsigned int)dbPort, dbUsername.c_str(),
-        dbPassword.c_str(), dbDatabase.c_str(), Config.MainConfig.getIntDefault("LogonDatabase", "ConnectionCount", 5),
+        dbPassword.c_str(), dbDatabase.c_str(), connections,
         16384))
     {
         LogError("Configs", "Connection to CharacterDatabase failed. Check your database configurations!");
@@ -348,12 +348,13 @@ bool Master::StartCharDb()
 
 bool Master::StartWorldDb()
 {
-    std::string dbHostname = Config.MainConfig.getStringDefault("WorldDatabase", "Hostname", "");
-    std::string dbUsername = Config.MainConfig.getStringDefault("WorldDatabase", "Username", "");
-    std::string dbPassword = Config.MainConfig.getStringDefault("WorldDatabase", "Password", "");
-    std::string dbDatabase = Config.MainConfig.getStringDefault("WorldDatabase", "Name", "");
+    std::string dbHostname = Conf.MainConfig.getStringDefault("WorldDatabase", "Hostname", "");
+    std::string dbUsername = Conf.MainConfig.getStringDefault("WorldDatabase", "Username", "");
+    std::string dbPassword = Conf.MainConfig.getStringDefault("WorldDatabase", "Password", "");
+    std::string dbDatabase = Conf.MainConfig.getStringDefault("WorldDatabase", "Name", "");
+    int connections = Conf.MainConfig.getIntDefault("WorldDatabase", "Connections", 3);
 
-    int dbPort = Config.MainConfig.getIntDefault("WorldDatabase", "Port", 3306);
+    int dbPort = Conf.MainConfig.getIntDefault("WorldDatabase", "Port", 3306);
 
     // Configure Main Database
     bool existsUsername = !dbUsername.empty();
@@ -390,9 +391,11 @@ bool Master::StartWorldDb()
         return false;
     }
 
+    sWorldSQL = Database::CreateDatabaseInterface();
+
     // Initialize it
     if (!sWorldSQL->Initialize(dbHostname.c_str(), (unsigned int)dbPort, dbUsername.c_str(),
-        dbPassword.c_str(), dbDatabase.c_str(), Config.MainConfig.getIntDefault("LogonDatabase", "ConnectionCount", 5),
+        dbPassword.c_str(), dbDatabase.c_str(), connections,
         16384))
     {
         LogError("Configs", "Connection to WorldDatabase failed. Check your database configurations!");
@@ -410,17 +413,23 @@ bool Master::LoadRealmConfiguration()
 {
     char* config_file = (char*)CONFDIR "/world.conf";
 
-    if (!Config.MainConfig.openAndLoadConfigFile(config_file))
+    LogNotice("Config : Loading Config Files...");
+    if (Conf.MainConfig.openAndLoadConfigFile(config_file))
     {
-        LOG_ERROR("Config file could not be rehashed.");
+        LogDetail("Config : " CONFDIR "/world.conf loaded");
+    }
+    else
+    {
+        LogError("Config : error occurred loading " CONFDIR "/world.conf");
+        AscLog.~AscEmuLog();
         return false;
     }
 
     // re-set the allowed server IP's
-    std::string allowedIps = Config.MainConfig.getStringDefault("LogonServer", "AllowedIPs", "");
+    std::string allowedIps = Conf.MainConfig.getStringDefault("LogonServer", "AllowedIPs", "");
     std::vector<std::string> vips = Util::SplitStringBySeperator(allowedIps, " ");
 
-    std::string allowedModIps = Config.MainConfig.getStringDefault("LogonServer", "AllowedModIPs", "");
+    std::string allowedModIps = Conf.MainConfig.getStringDefault("LogonServer", "AllowedModIPs", "");
     std::vector<std::string> vipsmod = Util::SplitStringBySeperator(allowedModIps, " ");
 
     m_allowedIpLock.Acquire();
@@ -522,7 +531,7 @@ void TaskList::spawn()
     thread_count.SetVal(0);
 
     uint32 threadcount;
-    if (Config.MainConfig.getBoolDefault("Startup", "EnableMultithreadedLoading", true))
+    if (Conf.MainConfig.getBoolDefault("Startup", "EnableMultithreadedLoading", true))
     {
         // get processor count
 #ifndef WIN32

@@ -100,9 +100,9 @@ void Session::HandleCharacterCreate(WorldPacket & recv_data)
         }
         delete result;
     }
-
+    
     // Check if player got Death Knight already on this realm.
-    if (Config.MainConfig.getBoolDefault("ClassOptions", "DeathKnightLimit", true) && has_dk && (class_ == DEATHKNIGHT))
+    if (Conf.MainConfig.getBoolDefault("ClassOptions", "DeathKnightLimit", true) && has_dk && (class_ == DEATHKNIGHT))
     {
         LoginErrorCode login_error = E_CHAR_CREATE_UNIQUE_CLASS_LIMIT;
         GetSocket()->OutPacket(SMSG_CHAR_CREATE, 1, &login_error);

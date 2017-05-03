@@ -11,8 +11,8 @@ LogonCommHandler::LogonCommHandler()
 {
     idhigh = 1;
     next_request = 1;
-    pings = !Config.MainConfig.getBoolDefault("LogonServer", "DisablePings", false);
-    std::string logon_pass = Config.MainConfig.getStringDefault("LogonServer", "RemotePassword", "r3m0t3");
+    pings = !Conf.MainConfig.getBoolDefault("LogonServer", "DisablePings", false);
+    std::string logon_pass = Conf.MainConfig.getStringDefault("LogonServer", "RemotePassword", "r3m0t3");
 
     // sha1 hash it
     Sha1Hash hash;
@@ -23,7 +23,7 @@ LogonCommHandler::LogonCommHandler()
     memcpy(sql_passhash, hash.GetDigest(), 20);
 
     // player limit
-    pLimit = Config.MainConfig.getIntDefault("Server", "PlayerLimit", 500);
+    pLimit = Conf.MainConfig.getIntDefault("Server", "PlayerLimit", 500);
     if (pLimit == 0) pLimit = 1;
     server_population = 0;
 
@@ -365,12 +365,12 @@ void LogonCommHandler::LoadRealmConfiguration()
 {
     LogonServer * ls = new LogonServer;
     ls->ID = idhigh++;
-    ls->Name = Config.MainConfig.getStringDefault("LogonServer", "Name", "UnkLogon");
-    ls->Address = Config.MainConfig.getStringDefault("LogonServer", "Address", "127.0.0.1");
-    ls->Port = Config.MainConfig.getIntDefault("LogonServer", "Port", 8093);
+    ls->Name = Conf.MainConfig.getStringDefault("LogonServer", "Name", "UnkLogon");
+    ls->Address = Conf.MainConfig.getStringDefault("LogonServer", "Address", "127.0.0.1");
+    ls->Port = Conf.MainConfig.getIntDefault("LogonServer", "Port", 8093);
     servers.insert(ls);
 
-    uint32 realmcount = Config.MainConfig.getIntDefault("LogonServer", "RealmCount", 1);
+    uint32 realmcount = Conf.MainConfig.getIntDefault("LogonServer", "RealmCount", 1);
     if (realmcount == 0)
     {
         LOG_ERROR("   >> no realms found. this server will not be online anywhere!");
@@ -383,13 +383,13 @@ void LogonCommHandler::LoadRealmConfiguration()
             realmString << "Realm" << i;
 
             Realm* realm = new Realm;
-            realm->Name = Config.MainConfig.getStringDefault(realmString.str(), "Name", "AscEmu");
-            realm->Address = Config.MainConfig.getStringDefault(realmString.str(), "Address", "127.0.0.1:8129");
+            realm->Name = Conf.MainConfig.getStringDefault(realmString.str(), "Name", "AscEmu");
+            realm->Address = Conf.MainConfig.getStringDefault(realmString.str(), "Address", "127.0.0.1:8129");
             realm->flags = 0;
-            realm->TimeZone = Config.MainConfig.getIntDefault(realmString.str(), "TimeZone", 1);
-            realm->Population = Config.MainConfig.getFloatDefault(realmString.str(), "Population", 0.0f);
-            realm->Lock = static_cast<uint8>(Config.MainConfig.getIntDefault(realmString.str(), "Lock", 0));
-            realm->GameBuild = Config.MainConfig.getIntDefault(realmString.str(), "GameBuild", 0);
+            realm->TimeZone = Conf.MainConfig.getIntDefault(realmString.str(), "TimeZone", 1);
+            realm->Population = Conf.MainConfig.getFloatDefault(realmString.str(), "Population", 0.0f);
+            realm->Lock = static_cast<uint8>(Conf.MainConfig.getIntDefault(realmString.str(), "Lock", 0));
+            realm->GameBuild = Conf.MainConfig.getIntDefault(realmString.str(), "GameBuild", 0);
             if (realm->GameBuild == 0)
             {
                 LOG_ERROR("   >> supported client build not found in realms.config. Update your configs!");
@@ -397,7 +397,7 @@ void LogonCommHandler::LoadRealmConfiguration()
                 return;
             }
 
-            std::string rt = Config.MainConfig.getStringDefault(realmString.str(), "Icon", "Normal");
+            std::string rt = Conf.MainConfig.getStringDefault(realmString.str(), "Icon", "Normal");
             Util::StringToLowerCase(rt);
 
             uint32 type;
