@@ -88,6 +88,7 @@ void ClusterInterface::ConnectionDropped()
     LogWarning("ClusterInterface : Socket disconnected, will attempt reconnect later");
     m_connected = false;
     retry = true;
+    lastConnectTime = time(NULL);
     _clientSocket = NULL;
 }
 
@@ -135,8 +136,6 @@ void ClusterInterface::ConnectToRealmServer()
 
 void ClusterInterface::HandleAuthRequest(WorldPacket & pck)
 {
-    printf("HandleAuthRequest \n");
-
     uint32 x;
     pck >> x;
 
@@ -176,8 +175,6 @@ void ClusterInterface::Pong(WorldPacket & pck)
 
 void ClusterInterface::HandleAuthResult(WorldPacket & pck)
 {
-    printf("HandleAuthResult \n");
-
     uint32 res;
     pck >> res;
 
@@ -207,8 +204,6 @@ void ClusterInterface::HandleAuthResult(WorldPacket & pck)
         }
     }
 
-    printf("ICMSG_REGISTER_WORKER \n");
-
     WorldPacket data(ICMSG_REGISTER_WORKER, 4 + (sizeof(std::vector<uint32>::size_type) * maps.size()) + (sizeof(std::vector<uint32>::size_type) * instancedmaps.size()));
     data << uint32(1);//BUILD_REVISION
     data << maps;
@@ -237,8 +232,20 @@ void ClusterInterface::HandlePlayerLogin(WorldPacket & pck)
     uint32 AccountId, Account_Flags, sessionid, ClientBuild;
     uint8 _class;
     std::string GMPermissions, accountname;
+
     SOCKET _sock;
-    pck >> Guid >> MapId >> InstanceId >> AccountId >> Account_Flags >> sessionid >> GMPermissions >> accountname >> ClientBuild >> _class >> _sock;
+
+    pck >> Guid;
+    pck >> MapId;
+    pck >> InstanceId;
+    pck >> AccountId;
+    pck >> Account_Flags;
+    pck >> sessionid;
+    pck >> GMPermissions;
+    pck >> accountname;
+    pck >> ClientBuild;
+    pck >> _class;
+    pck >> _sock;
 
     /* create the session */
     WorldSession * s = sWorld.FindSession(AccountId);
@@ -257,14 +264,18 @@ void ClusterInterface::HandlePlayerLogin(WorldPacket & pck)
     {
         /* login was ok. send a message to the realm server telling him to distribute our info to all other realm server */
         WorldPacket data(ICMSG_PLAYER_LOGIN_RESULT, 5);
-        data << Guid << sessionid << uint8(1);
+        data << Guid;
+        data << sessionid;
+        data << uint8(1);
         SendPacket(&data);
     }
     else
     {
         /* for some reason the login failed */
         WorldPacket data(ICMSG_PLAYER_LOGIN_RESULT, 5);
-        data << Guid << sessionid << uint8(0);
+        data << Guid;
+        data << sessionid;
+        data << uint8(0);
         SendPacket(&data);
 
         /* tell the client his login failed before deleting the session */
@@ -382,11 +393,14 @@ void ClusterInterface::HandleWoWPacket(WorldPacket & pck)
 {
     uint32 size, sid;
     uint16 opcode;
-    pck >> sid >> opcode >> size;
+
+    pck >> sid;
+    pck >> opcode;
+    pck >> size;
 
     if (!_sessions[sid])
     {
-        LogError("HandleWoWPacket", "Invalid session: %u", sid);
+        LogError("HandleWoWPacket : Invalid session: %u", sid);
         return;
     }
 
@@ -399,7 +413,11 @@ void ClusterInterface::HandleWoWPacket(WorldPacket & pck)
 void ClusterInterface::RequestTransfer(Player* plr, uint32 MapId, uint32 InstanceId, const LocationVector & vec)
 {
     WorldPacket data(ICMSG_TELEPORT_REQUEST, 32);
-    data << plr->GetSession()->GetSocket()->GetSessionId() << MapId << InstanceId << vec << vec.o;
+    data << plr->GetSession()->GetSocket()->GetSessionId();
+    data << MapId;
+    data << InstanceId;
+    data << vec;
+    data << vec.o;
     SendPacket(&data);
 }
 
@@ -425,7 +443,11 @@ void ClusterInterface::HandleTeleportResult(WorldPacket & pck)
         return;
     }
 
-    pck >> result >> mapid >> instanceid >> vec >> o;
+    pck >> result;
+    pck >> mapid;
+    pck >> instanceid;
+    pck >> vec;
+    pck >> o;
 
     //the destination is on the same server
     if (result == 1)
@@ -445,11 +467,8 @@ void ClusterInterface::HandleTeleportResult(WorldPacket & pck)
         uint32 oldinstanceid = s->GetPlayer()->GetInstanceID();
         uint32 playerlowguid = s->GetPlayer()->GetLowGUID();
         uint8 _class = s->GetPlayer()->getClass();
-
-        //s->GetPlayer()->SetMapId(mapid);
-        //s->GetPlayer()->SetInstanceID(instanceid);
-        //s->GetPlayer()->SetPosition(vec.x, vec.y, vec.z, vec.o);
-        //s->GetPlayer()->SaveToDB(true);
+        
+        // Save us to the Database :)
         CharacterDatabase.Execute("UPDATE characters SET mapid=%u, positionX=%f, positionY=%f, positionZ=%f WHERE guid=%u AND acct=%u", mapid, vec.x, vec.y, vec.z, playerlowguid, s->GetAccountId());
 
         Arcemu::Sleep(200);
@@ -470,12 +489,11 @@ void ClusterInterface::HandleTeleportResult(WorldPacket & pck)
         s->GetPlayer()->UpdateRPlayerInfo(pRPlayer, newRplr);
         pRPlayer->MapId = mapid;
         pRPlayer->InstanceId = instanceid;
+
         WorldPacket data;
         data.Initialize(ICMSG_PLAYER_INFO);
         pRPlayer->Pack(data);
         sClusterInterface.SendPacket(&data);
-
-        //s->m_clusterRemove = true;
 
         //Remove us from this Server
         sEventMgr.AddEvent(s->GetPlayer(), &Player::HandleClusterRemove, EVENT_UNK, 1, 1, EVENT_FLAG_DO_NOT_EXECUTE_IN_WORLD_CONTEXT);
@@ -485,7 +503,13 @@ void ClusterInterface::HandleTeleportResult(WorldPacket & pck)
 void ClusterInterface::SendSwitchServer(WorldSession* s, uint32 sessionid, uint32 playerlowguid, uint8 _class, uint32 mapid, uint32 instanceid, LocationVector vec, float o)
 {
     WorldPacket data(ICMSG_SWITCH_SERVER, 100);
-    data << sessionid << playerlowguid << _class << mapid << instanceid << vec << o;
+    data << sessionid;
+    data << playerlowguid;
+    data << _class;
+    data << mapid;
+    data << instanceid;
+    data << vec;
+    data << o;
     sClusterInterface.SendPacket(&data);
 
     RPlayerInfo * pRPlayer = GetPlayer(playerlowguid);
@@ -508,7 +532,6 @@ void ClusterInterface::SendSwitchServer(WorldSession* s, uint32 sessionid, uint3
 
 void ClusterInterface::HandlePlayerInfo(WorldPacket & pck)
 {
-
     uint32 guid;
     pck >> guid;
     RPlayerInfo * pRPlayer = GetPlayer(guid);
@@ -519,36 +542,17 @@ void ClusterInterface::HandlePlayerInfo(WorldPacket & pck)
 
     _onlinePlayers[pRPlayer->Guid] = pRPlayer;
     printf("Online Players %u \n", _onlinePlayers.size());
-
-    /* m_onlinePlayerMapMutex.Acquire();
-
-    RPlayerInfo* playerInfo;
-    uint32 count;
-
-    pck >> count;
-
-    for (uint32 i = 0; i < count; i++)
-    {
-    playerInfo = new RPlayerInfo;
-    playerInfo->Unpack(pck);
-    _onlinePlayers[playerInfo->Guid] = playerInfo;
-    }
-
-    printf("Online Players %u \n", _onlinePlayers.size());
-
-    m_onlinePlayerMapMutex.Release();*/
 }
 
 bool WorldSession::ClusterTryPlayerLogin(uint32 Guid, uint8 _class, uint32 ClientBuild, std::string GMPermissions, uint32 Account_Flags)
 {
-    LogDebug("WorldSession", " Recvd Player Logon Message");
+    LogDebug("WorldSession : Recvd Player Logon Message");
 
     if (objmgr.GetPlayer(Guid) != NULL || m_loggingInPlayer || _player)
     {
         // A character with that name already exists 0x3E
         uint8 respons = 0x3E;
         OutPacket(SMSG_CHARACTER_LOGIN_FAILED, 1, &respons);
-        printf("name already exists \n");
         return false;
     }
 
@@ -669,6 +673,7 @@ void ClusterInterface::HandleSessionRemoved(WorldPacket & pck)
 {
     uint32 sessionid;
     pck >> sessionid;
+
     WorldSession* s = GetSession(sessionid);
     if (s != NULL)
         delete s;

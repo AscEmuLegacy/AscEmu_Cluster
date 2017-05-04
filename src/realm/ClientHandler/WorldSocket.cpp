@@ -69,6 +69,7 @@ void WorldSocket::OnDisconnect()
     if (mSession)
     {
         mSession->SetServer(NULL);
+        sClientMgr.DestroySession(mSession->GetSessionId());
         mSession = NULL;
     }
 

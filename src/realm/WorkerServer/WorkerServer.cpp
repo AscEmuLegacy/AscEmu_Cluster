@@ -150,11 +150,14 @@ void WorkerServer::HandleWoWPacket(WorldPacket & pck)
     /* get session */
     pck >> sessionid >> opcode >> size;
     Session * session = sClientMgr.GetSession(sessionid);
-    if (!session) return;
+
+    if (!session)
+        return;
 
     /* write it to that session's output buffer */
-    WorldSocket * s = session->GetSocket();
-    if (s) s->OutPacket(opcode, size, size ? ((const void*)(pck.contents() + 10)) : 0);
+    WorldSocket * socket = session->GetSocket();
+    if (socket)
+        socket->OutPacket(opcode, size, size ? ((const void*)(pck.contents() + 10)) : 0);
 }
 
 void WorkerServer::HandlePlayerLogout(WorldPacket & pck)
@@ -210,7 +213,8 @@ void WorkerServer::HandleTeleportRequest(WorldPacket & pck)
         {
             /* server found! */
             LocationVector vec;
-            pck >> vec >> vec.o;
+            pck >> vec;
+            pck >> vec.o;
 
             pi->MapId = mapid;
             pi->InstanceId = instanceid;
@@ -220,13 +224,23 @@ void WorkerServer::HandleTeleportRequest(WorldPacket & pck)
             if (dest == s->GetServer())
             {
                 /* we're not changing servers, the new instance is on the same server */
-                data << sessionid << uint8(1) << mapid << instanceid << vec << vec.o;
+                data << sessionid;
+                data << uint8(1);
+                data << mapid;
+                data << instanceid;
+                data << vec;
+                data << vec.o;
                 SendPacket(&data);
             }
             else
             {
                 /* notify the old server to pack the player info together to send to the new server, and delete the player */
-                data << sessionid << uint8(0) << mapid << instanceid << vec << vec.o;
+                data << sessionid;
+                data << uint8(0);
+                data << mapid;
+                data << instanceid;
+                data << vec;
+                data << vec.o;
                 //cache this to next server and switch servers when were ready :P
                 s->SetNextServer(dest);
                 SendPacket(&data);
@@ -243,7 +257,11 @@ void WorkerServer::HandlePlayerLoginResult(WorldPacket & pck)
 {
     uint32 guid, sessionid;
     uint8 result;
-    pck >> guid >> sessionid >> result;
+
+    pck >> guid;
+    pck >> sessionid;
+    pck >> result;
+
     if (result)
     {
         LogDefault("WorkerServer : Worldserver %u reports successful login of player %u", m_id, guid);
@@ -266,11 +284,12 @@ void WorkerServer::HandlePlayerLoginResult(WorldPacket & pck)
     else
     {
         LogError("WorkerServer : Worldserver %u reports failed login of player %u", m_id, guid);
-        Session * s = sClientMgr.GetSession(sessionid);
-        if (s)
+
+        Session * session = sClientMgr.GetSession(sessionid);
+        if (session)
         {
-            s->ClearCurrentPlayer();
-            s->ClearServers();
+            session->ClearCurrentPlayer();
+            session->ClearServers();
         }
 
         sClientMgr.DestroyRPlayerInfo(guid);
@@ -287,7 +306,7 @@ void WorkerServer::Update()
         if (opcode < IMSG_NUM_TYPES && WorkerServer::PHandlers[opcode] != 0)
             (this->*WorkerServer::PHandlers[opcode])(*pck);
         else
-            LogError("WorkerServer : Unhandled packet %u\n", opcode);
+            LogError("WorkerServer : Unhandled packet %u \n", opcode);
     }
     /*
     uint32 t = (uint32)UNIXTIME;
@@ -322,7 +341,8 @@ void WorkerServer::HandleError(WorldPacket & pck)
     uint32 sessionid;
     uint8 errorcode;
 
-    pck >> sessionid >> errorcode;
+    pck >> sessionid;
+    pck >> errorcode;
 
     switch (errorcode)
     {
@@ -336,6 +356,7 @@ void WorkerServer::HandlePlayerInfo(WorldPacket & pck)
 {
     uint32 guid;
     pck >> guid;
+
     RPlayerInfo * pRPlayer = sClientMgr.GetRPlayer(guid);
     ASSERT(pRPlayer);
 

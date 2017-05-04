@@ -128,7 +128,11 @@ bool Master::Run(int argc, char ** argv)
     _HookSignals();
 
     LogDetail("Realmserver : Loading DBC files...");
-    // Todo we need it later
+    /*if (!LoadDBCs())
+    {
+        AscLog.ConsoleLogMajorError("One or more of the DBC files are missing.", "These are absolutely necessary for the server to function.", "The server will not start without them.", "");
+        return false;
+    }*/
 
     new ClusterMgr;
     new ClientMgr;

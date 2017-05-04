@@ -34,8 +34,6 @@ void WorkerServerSocket::HandleAuthRequest(WorldPacket & pck)
     SendPacket(&data);
 
     _authenticated = true;
-
-    LogNotice("ISMSG_AUTH_RESULT \n");
 }
 
 void WorkerServerSocket::OnRead()
@@ -146,6 +144,7 @@ void WorkerServerSocket::SendPacket(WorldPacket * pck)
     bool rv;
     size_t size = pck->size();
     uint16 opcode = pck->GetOpcode();
+
     if (!IsConnected())
         return;
 
@@ -165,13 +164,13 @@ void WorkerServerSocket::SendPacket(WorldPacket * pck)
 
 void WorkerServerSocket::SendWoWPacket(Session * from, WorldPacket * pck)
 {
-    LogNotice("SendWoWPacket \n");
     bool rv;
     size_t size1 = pck->size();
     uint16 opcode1 = pck->GetOpcode();
     size_t size2 = size1 + 10;
     uint32 opcode2 = ISMSG_WOW_PACKET;
     uint32 id = from->GetSessionId();
+
     if (!IsConnected())
         return;
 
@@ -194,8 +193,6 @@ void WorkerServerSocket::SendWoWPacket(Session * from, WorldPacket * pck)
 
 void WorkerServerSocket::OnConnect()
 {
-    LogNotice("ISMSG_AUTH_REQUEST \n");
-
     Arcemu::Sleep(200);
 
     WorldPacket data(ISMSG_AUTH_REQUEST, 4);

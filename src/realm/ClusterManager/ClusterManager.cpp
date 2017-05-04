@@ -43,6 +43,7 @@ WorkerServer * ClusterMgr::CreateWorkerServer(WorkerServerSocket * socket)
 {
     /* find an id */
     m_lock.AcquireWriteLock();
+
     uint32 WorkerId;
 
     for (WorkerId = 1; WorkerId < MAX_WORKER_SERVERS; ++WorkerId)
@@ -71,25 +72,28 @@ WorkerServer * ClusterMgr::CreateWorkerServer(WorkerServerSocket * socket)
 
 void ClusterMgr::Update()
 {
-    //Slave_lock.Acquire();
+    Slave_Lock.Acquire();
 
     for (uint32 i = 1; i <= m_maxWorkerServer; ++i)
         if (WorkerServers[i])
             WorkerServers[i]->Update();
 
-    //Slave_lock.Release();
+    Slave_Lock.Release();
 }
 
 void ClusterMgr::DistributePacketToAll(WorldPacket * data, WorkerServer * exclude)
 {
+    Slave_Lock.Acquire();
+
     for (uint32 i = 0; i <= m_maxWorkerServer; ++i)
         if (WorkerServers[i] && WorkerServers[i] != exclude)
             WorkerServers[i]->SendPacket(data);
+
+    Slave_Lock.Release();
 }
 
 void ClusterMgr::OnServerDisconnect(WorkerServer* s)
 {
-    //grab ze lock
     m_lock.AcquireWriteLock();
 
     if (Maps.size())
