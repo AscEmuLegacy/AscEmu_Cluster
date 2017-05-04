@@ -45,7 +45,7 @@ void WorkerServer::HandleCreatePlayerResult(WorldPacket & pck)
 
 void WorkerServer::HandleTransporterMapChange(WorldPacket & pck)
 {
-    LogDetail("WServer", "Recieved ICMSG_TRANSPORTER_MAP_CHANGE");
+    LogDetail("WorkerServer : Recieved ICMSG_TRANSPORTER_MAP_CHANGE");
 }
 
 void WorkerServer::HandleSaveAllPlayers(WorldPacket & pck)
@@ -121,7 +121,7 @@ void WorkerServer::HandleRegisterWorker(WorldPacket & pck)
         i->Mapid = (*itr);
         i->workerServer = this;
         sClusterMgr.Maps.insert(std::pair<uint32, Servers*>((*itr), i));
-        LogDetail("ClusterMgr", "Allocating map %u to worker %u", (*itr), GetID());
+        LogDetail("ClusterMgr : Allocating map %u to worker %u", (*itr), GetID());
     }
 
     std::vector<uint32> result;
@@ -138,7 +138,7 @@ void WorkerServer::HandleRegisterWorker(WorldPacket & pck)
         i->Mapid  = (*itr2);
         i->workerServer = this;
         sClusterMgr.Maps.insert(std::pair<uint32, Servers*>((*itr2), i));
-        LogDetail("ClusterMgr", "Allocating map %u to worker %u", (*itr2), GetID());
+        LogDetail("ClusterMgr : Allocating map %u to worker %u", (*itr2), GetID());
     }
 }
 
@@ -246,7 +246,7 @@ void WorkerServer::HandlePlayerLoginResult(WorldPacket & pck)
     pck >> guid >> sessionid >> result;
     if (result)
     {
-        LogDefault("WServer", "Worldserver %u reports successful login of player %u", m_id, guid);
+        LogDefault("WorkerServer : Worldserver %u reports successful login of player %u", m_id, guid);
         Session * s = sClientMgr.GetSession(sessionid);
         if (s)
         {
@@ -265,7 +265,7 @@ void WorkerServer::HandlePlayerLoginResult(WorldPacket & pck)
     }
     else
     {
-        LogError("WServer", "Worldserver %u reports failed login of player %u", m_id, guid);
+        LogError("WorkerServer : Worldserver %u reports failed login of player %u", m_id, guid);
         Session * s = sClientMgr.GetSession(sessionid);
         if (s)
         {
@@ -287,7 +287,7 @@ void WorkerServer::Update()
         if (opcode < IMSG_NUM_TYPES && WorkerServer::PHandlers[opcode] != 0)
             (this->*WorkerServer::PHandlers[opcode])(*pck);
         else
-            LogError("WorkerServer", "Unhandled packet %u\n", opcode);
+            LogError("WorkerServer : Unhandled packet %u\n", opcode);
     }
     /*
     uint32 t = (uint32)UNIXTIME;

@@ -11,7 +11,7 @@ ClientMgr::ClientMgr()
 {
     Session::InitHandlers();
     m_maxSessionId = 0;
-    LogNotice("ClientMgr", "Interface Created");
+    LogNotice("ClientMgr : Interface Created");
 }
 
 ClientMgr::~ClientMgr()
@@ -106,7 +106,7 @@ Session * ClientMgr::CreateSession(uint32 AccountId)
     else
     {
         sessionid = ++m_maxSessionId;
-        LogDebug("Session", "New max session id: %u", sessionid);
+        LogDebug("Session : New max session id: %u", sessionid);
     }
 
     //ok, if we have a session with this account, add it to delete queue
@@ -118,7 +118,7 @@ Session * ClientMgr::CreateSession(uint32 AccountId)
     if (sessionid == 0)
         return NULL;
 
-    LogDebug("ClientMgr", "Allocating session %u for account id %u", sessionid, AccountId);
+    LogDebug("ClientMgr : Allocating session %u for account id %u", sessionid, AccountId);
     Session* s = new Session(sessionid);
 
     m_sessions.insert(SessionMap::value_type(sessionid, s));

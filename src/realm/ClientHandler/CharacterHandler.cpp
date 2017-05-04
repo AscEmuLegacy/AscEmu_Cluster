@@ -194,7 +194,7 @@ void Session::HandleCharacterEnum(WorldPacket & pck)
         } while (result->NextRow());
     }
 
-    LogDebug("Character Enum", "Built in %u ms.", getMSTime() - start_time);
+    LogDebug("Character Enum : Built in %u ms.", getMSTime() - start_time);
     SendPacket(&data);
 }
 
@@ -210,7 +210,7 @@ void Session::HandlePlayerLogin(WorldPacket & pck)
 
     if (sClientMgr.GetRPlayer((uint32)guid) != NULL)
     {
-        data << uint8(0x3E);
+        data << uint8(E_CHAR_LOGIN_DUPLICATE_CHARACTER);
         SendPacket(&data);
         return;
     }
@@ -315,8 +315,14 @@ void Session::HandlePlayerLogin(WorldPacket & pck)
     if (dest == NULL)
     {
         /* world server is down */
-        data << uint8(0x3D);
+        if(IS_MAIN_MAP(m_currentPlayer->MapId))
+            data << uint8(E_CHAR_LOGIN_NO_WORLD);
+        else
+            data << uint8(E_CHAR_LOGIN_NO_INSTANCES);
+
         SendPacket(&data);
+
+        // Destroy the Player
         sClientMgr.DestroyRPlayerInfo((uint32)guid);
         m_currentPlayer = NULL;
         return;

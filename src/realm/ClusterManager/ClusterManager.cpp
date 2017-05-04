@@ -10,7 +10,7 @@ ClusterMgr::ClusterMgr()
 {
     memset(WorkerServers, 0, sizeof(WorkerServer*) * MAX_WORKER_SERVERS);
     m_maxWorkerServer = 0;
-    LogDefault("ClusterMgr", "Interface Created");
+    LogDefault("ClusterMgr : Interface Created");
 
     WorkerServer::InitHandlers();
 }
@@ -39,30 +39,34 @@ WorkerServer* ClusterMgr::GetAnyWorkerServer()
     return NULL;
 }
 
-WorkerServer * ClusterMgr::CreateWorkerServer(WorkerServerSocket * s)
+WorkerServer * ClusterMgr::CreateWorkerServer(WorkerServerSocket * socket)
 {
     /* find an id */
     m_lock.AcquireWriteLock();
-    uint32 i;
-    for (i = 1; i < MAX_WORKER_SERVERS; ++i)
+    uint32 WorkerId;
+
+    for (WorkerId = 1; WorkerId < MAX_WORKER_SERVERS; ++WorkerId)
     {
-        if (WorkerServers[i] == 0)
+        if (WorkerServers[WorkerId] == 0)
             break;
     }
 
-    if (i == MAX_WORKER_SERVERS)
+    if (WorkerId == MAX_WORKER_SERVERS)
     {
         m_lock.ReleaseWriteLock();
         return NULL;// No spaces
     }
 
-    LogDebug("ClusterMgr", "Allocating worker server %u to %s:%u", i, s->GetRemoteIP().c_str(), s->GetRemotePort());
+    LogDebug("ClusterMgr : Allocating worker server %u to %s:%u", WorkerId, socket->GetRemoteIP().c_str(), socket->GetRemotePort());
 
-    if (m_maxWorkerServer < i)
-        m_maxWorkerServer = i;
+    // Register the Server :D
+    WorkerServers[WorkerId] = new WorkerServer(WorkerId, socket);
+
+    if (m_maxWorkerServer < WorkerId)
+        m_maxWorkerServer = WorkerId;
 
     m_lock.ReleaseWriteLock();
-    return WorkerServers[i];
+    return WorkerServers[WorkerId];
 }
 
 void ClusterMgr::Update()
@@ -95,7 +99,7 @@ void ClusterMgr::OnServerDisconnect(WorkerServer* s)
         {
             if (itr->second->workerServer == s)
             {
-                LogWarning("ClusterMgr", "Removing Map %u on WorkerServer %u due to worker server disconnection", s->GetID(), itr->second->Mapid);
+                LogWarning("ClusterMgr : Removing Map %u on WorkerServer %u due to worker server disconnection", s->GetID(), itr->second->Mapid);
                 delete itr->second;
                 itr = Maps.erase(itr);
             }
@@ -109,7 +113,7 @@ void ClusterMgr::OnServerDisconnect(WorkerServer* s)
     {
         if (WorkerServers[i] == s)
         {
-            LogWarning("ClusterMgr", "Removing Worker Server due to disconnection");
+            LogWarning("ClusterMgr : Removing Worker Server due to disconnection");
             WorkerServers[i] = NULL;
         }
     }

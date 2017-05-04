@@ -31,11 +31,11 @@ void MySQLDataStore::LoadItemPagesTable()
     QueryResult* itempages_result = sWorldSQL->Query("SELECT entry, text, next_page FROM item_pages");
     if (itempages_result == nullptr)
     {
-        LogNotice("MySQLDataLoads", "Table `item_pages` is empty!");
+        LogNotice("MySQLDataLoads : Table `item_pages` is empty!");
         return;
     }
 
-    LogNotice("MySQLDataLoads", "Table `item_pages` has %u columns", itempages_result->GetFieldCount());
+    LogNotice("MySQLDataLoads : Table `item_pages` has %u columns", itempages_result->GetFieldCount());
 
     _itemPagesStore.rehash(itempages_result->GetRowCount());
 
@@ -58,7 +58,7 @@ void MySQLDataStore::LoadItemPagesTable()
 
     delete itempages_result;
 
-    LogDetail("MySQLDataLoads", "Loaded %u pages from `item_pages` table in %u ms!", itempages_count, getMSTime() - start_time);
+    LogDetail("MySQLDataLoads : Loaded %u pages from `item_pages` table in %u ms!", itempages_count, getMSTime() - start_time);
 }
 
 ItemPage const* MySQLDataStore::GetItemPage(uint32 entry)
@@ -555,7 +555,7 @@ void MySQLDataStore::LoadCreaturePropertiesTable()
         delete creature_properties_result;
     }
 
-    LogDetail("MySQLDataLoads", "Loaded %u creature proto data in %u ms!", creature_properties_count, getMSTime() - start_time);
+    LogDetail("MySQLDataLoads : Loaded %u creature proto data in %u ms!", creature_properties_count, getMSTime() - start_time);
 }
 
 CreatureProperties const* MySQLDataStore::GetCreatureProperties(uint32 entry)
@@ -590,7 +590,7 @@ void MySQLDataStore::LoadGameObjectPropertiesTable()
 
         if (gameobject_properties_result == nullptr)
         {
-            LogNotice("MySQLDataLoads", "Table `%s` is empty!", table_name.c_str());
+            LogNotice("MySQLDataLoads : Table `%s` is empty!", table_name.c_str());
             return;
         }
 
@@ -606,12 +606,12 @@ void MySQLDataStore::LoadGameObjectPropertiesTable()
 
         if (basic_field_count != gameobject_properties_result->GetFieldCount())
         {
-            LogError("MySQLDataLoads", "Additional gameobject_properties table `%s` has %u columns, but needs %u columns! Skipped!", table_name.c_str(), gameobject_properties_result->GetFieldCount());
+            LogError("MySQLDataLoads : Additional gameobject_properties table `%s` has %u columns, but needs %u columns! Skipped!", table_name.c_str(), gameobject_properties_result->GetFieldCount());
             delete gameobject_properties_result;
             continue;
         }
 
-        LogNotice("MySQLDataLoads", "Table `%s` has %u columns", table_name.c_str(), gameobject_properties_result->GetFieldCount());
+        LogNotice("MySQLDataLoads : Table `%s` has %u columns", table_name.c_str(), gameobject_properties_result->GetFieldCount());
 
         _gameobjectPropertiesStore.rehash(row_count + gameobject_properties_result->GetRowCount());
 
@@ -666,7 +666,7 @@ void MySQLDataStore::LoadGameObjectPropertiesTable()
                     auto quest_item_proto = GetItemProperties(quest_item_entry);
                     if (quest_item_proto == nullptr)
                     {
-                        LogError("MySQLDataLoads", "Table `%s` questitem%u : %u is not a valid item! Default set to 0 for entry: %u.", table_name.c_str(), i, quest_item_entry, entry);
+                        LogError("MySQLDataLoads : Table `%s` questitem%u : %u is not a valid item! Default set to 0 for entry: %u.", table_name.c_str(), i, quest_item_entry, entry);
                         gameobjecProperties.QuestItems[i] = 0;
                     }
                     else
@@ -683,7 +683,7 @@ void MySQLDataStore::LoadGameObjectPropertiesTable()
         delete gameobject_properties_result;
     }
 
-    LogDetail("MySQLDataLoads", "Loaded %u gameobject data in %u ms!", gameobject_properties_count, getMSTime() - start_time);
+    LogDetail("MySQLDataLoads : Loaded %u gameobject data in %u ms!", gameobject_properties_count, getMSTime() - start_time);
 }
 
 GameObjectProperties const* MySQLDataStore::GetGameObjectProperties(uint32 entry)
@@ -747,7 +747,7 @@ void MySQLDataStore::LoadQuestPropertiesTable()
 
         if (quest_result == nullptr)
         {
-            LogNotice("MySQLDataLoads", "Table `%s` is empty!", table_name.c_str());
+            LogNotice("MySQLDataLoads : Table `%s` is empty!", table_name.c_str());
             return;
         }
 
@@ -763,12 +763,12 @@ void MySQLDataStore::LoadQuestPropertiesTable()
 
         if (basic_field_count != quest_result->GetFieldCount())
         {
-            LogError("MySQLDataLoads", "Additional quest_properties table `%s` has %u columns, but needs %u columns! Skipped!", table_name.c_str(), quest_result->GetFieldCount());
+            LogError("MySQLDataLoads : Additional quest_properties table `%s` has %u columns, but needs %u columns! Skipped!", table_name.c_str(), quest_result->GetFieldCount());
             delete quest_result;
             continue;
         }
 
-        LogNotice("MySQLDataLoads", "Table `%s` has %u columns", table_name.c_str(), quest_result->GetFieldCount());
+        LogNotice("MySQLDataLoads : Table `%s` has %u columns", table_name.c_str(), quest_result->GetFieldCount());
 
         _questPropertiesStore.rehash(row_count + quest_result->GetRowCount());
 
@@ -921,7 +921,7 @@ void MySQLDataStore::LoadQuestPropertiesTable()
         delete quest_result;
     }
 
-    LogDetail("MySQLDataLoads", "Loaded %u quest_properties data in %u ms!", quest_count, getMSTime() - start_time);
+    LogDetail("MySQLDataLoads : Loaded %u quest_properties data in %u ms!", quest_count, getMSTime() - start_time);
 }
 
 QuestProperties const* MySQLDataStore::GetQuestProperties(uint32 entry)
@@ -943,11 +943,11 @@ void MySQLDataStore::LoadCreatureDifficultyTable()
 
     if (creature_difficulty_result == nullptr)
     {
-        LogNotice("MySQLDataLoads", "Table `creature_difficulty` is empty!");
+        LogNotice("MySQLDataLoads : Table `creature_difficulty` is empty!");
         return;
     }
 
-    LogNotice("MySQLDataLoads", "Table `creature_difficulty` has %u columns", creature_difficulty_result->GetFieldCount());
+    LogNotice("MySQLDataLoads : Table `creature_difficulty` has %u columns", creature_difficulty_result->GetFieldCount());
 
     _creatureDifficultyStore.rehash(creature_difficulty_result->GetRowCount());
 
@@ -972,7 +972,7 @@ void MySQLDataStore::LoadCreatureDifficultyTable()
 
     delete creature_difficulty_result;
 
-    LogDetail("MySQLDataLoads", "Loaded %u creature difficulties info from `creature_difficulty` table in %u ms!", creature_difficulty_count, getMSTime() - start_time);
+    LogDetail("MySQLDataLoads : Loaded %u creature difficulties info from `creature_difficulty` table in %u ms!", creature_difficulty_count, getMSTime() - start_time);
 }
 
 uint32 MySQLDataStore::GetCreatureDifficulty(uint32 entry, uint8 difficulty_type)
@@ -1015,11 +1015,11 @@ void MySQLDataStore::LoadDisplayBoundingBoxesTable()
 
     if (display_bounding_boxes_result == nullptr)
     {
-        LogNotice("MySQLDataLoads", "Table `display_bounding_boxes` is empty!");
+        LogNotice("MySQLDataLoads : Table `display_bounding_boxes` is empty!");
         return;
     }
 
-    LogNotice("MySQLDataLoads", "Table `display_bounding_boxes` has %u columns", display_bounding_boxes_result->GetFieldCount());
+    LogNotice("MySQLDataLoads : Table `display_bounding_boxes` has %u columns", display_bounding_boxes_result->GetFieldCount());
 
     _displayBoundingBoxesStore.rehash(display_bounding_boxes_result->GetRowCount());
 
@@ -1048,7 +1048,7 @@ void MySQLDataStore::LoadDisplayBoundingBoxesTable()
 
     delete display_bounding_boxes_result;
 
-    LogDetail("MySQLDataLoads", "Loaded %u display bounding info from `display_bounding_boxes` table in %u ms!", display_bounding_boxes_count, getMSTime() - start_time);
+    LogDetail("MySQLDataLoads : Loaded %u display bounding info from `display_bounding_boxes` table in %u ms!", display_bounding_boxes_count, getMSTime() - start_time);
 }
 
 DisplayBounding const* MySQLDataStore::GetDisplayBounding(uint32 entry)
@@ -1071,11 +1071,11 @@ void MySQLDataStore::LoadAreaTriggersTable()
 
     if (area_triggers_result == nullptr)
     {
-        LogNotice("MySQLDataLoads", "Table `areatriggers` is empty!");
+        LogNotice("MySQLDataLoads : Table `areatriggers` is empty!");
         return;
     }
 
-    LogNotice("MySQLDataLoads", "Table `areatriggers` has %u columns", area_triggers_result->GetFieldCount());
+    LogNotice("MySQLDataLoads : Table `areatriggers` has %u columns", area_triggers_result->GetFieldCount());
 
     _areaTriggersStore.rehash(area_triggers_result->GetRowCount());
 
@@ -1105,7 +1105,7 @@ void MySQLDataStore::LoadAreaTriggersTable()
 
     delete area_triggers_result;
 
-    LogDetail("MySQLDataLoads", "Loaded %u areatriggers from `areatriggers` table in %u ms!", area_triggers_count, getMSTime() - start_time);
+    LogDetail("MySQLDataLoads : Loaded %u areatriggers from `areatriggers` table in %u ms!", area_triggers_count, getMSTime() - start_time);
 }
 
 AreaTrigger const* MySQLDataStore::GetAreaTrigger(uint32 entry)
@@ -1125,11 +1125,11 @@ void MySQLDataStore::LoadGraveyardsTable()
     QueryResult* graveyards_result = sWorldSQL->Query("SELECT id, position_x, position_y, position_z, orientation, zoneid, adjacentzoneid, mapid, faction FROM graveyards");
     if (graveyards_result == nullptr)
     {
-        LogNotice("MySQLDataLoads", "Table `graveyards` is empty!");
+        LogNotice("MySQLDataLoads : Table `graveyards` is empty!");
         return;
     }
 
-    LogNotice("MySQLDataLoads", "Table `graveyards` has %u columns", graveyards_result->GetFieldCount());
+    LogNotice("MySQLDataLoads : Table `graveyards` has %u columns", graveyards_result->GetFieldCount());
 
     _graveyardsStore.rehash(graveyards_result->GetRowCount());
 
@@ -1157,7 +1157,7 @@ void MySQLDataStore::LoadGraveyardsTable()
 
     delete graveyards_result;
 
-    LogDetail("MySQLDataLoads", "Loaded %u rows from `graveyards` table in %u ms!", graveyards_count, getMSTime() - start_time);
+    LogDetail("MySQLDataLoads : Loaded %u rows from `graveyards` table in %u ms!", graveyards_count, getMSTime() - start_time);
 }
 
 GraveyardTeleport const* MySQLDataStore::GetGraveyard(uint32 entry)
@@ -1181,11 +1181,11 @@ void MySQLDataStore::LoadWorldMapInfoTable()
         "heroic_keyid_1, heroic_keyid_2, viewingDistance, required_checkpoint, workerid, cluster_loads_map FROM worldmap_info");
     if (worldmap_info_result == nullptr)
     {
-        LogNotice("MySQLDataLoads", "Table `worldmap_info` is empty!");
+        LogNotice("MySQLDataLoads : Table `worldmap_info` is empty!");
         return;
     }
 
-    LogNotice("MySQLDataLoads", "Table `worldmap_info` has %u columns", worldmap_info_result->GetFieldCount());
+    LogNotice("MySQLDataLoads : Table `worldmap_info` has %u columns", worldmap_info_result->GetFieldCount());
 
     _worldMapInfoStore.rehash(worldmap_info_result->GetRowCount());
 
@@ -1227,7 +1227,7 @@ void MySQLDataStore::LoadWorldMapInfoTable()
 
     delete worldmap_info_result;
 
-    LogDetail("MySQLDataLoads", "Loaded %u rows from `worldmap_info` table in %u ms!", world_map_info_count, getMSTime() - start_time);
+    LogDetail("MySQLDataLoads : Loaded %u rows from `worldmap_info` table in %u ms!", world_map_info_count, getMSTime() - start_time);
 }
 
 MapInfo const* MySQLDataStore::GetWorldMapInfo(uint32 entry)
@@ -1247,11 +1247,11 @@ void MySQLDataStore::LoadWorldStringsTable()
     QueryResult* worldstring_tables_result = sWorldSQL->Query("SELECT entry, text FROM worldstring_tables");
     if (worldstring_tables_result == nullptr)
     {
-        LogNotice("MySQLDataLoads", "Table `worldstring_tables` is empty!");
+        LogNotice("MySQLDataLoads : Table `worldstring_tables` is empty!");
         return;
     }
 
-    LogNotice("MySQLDataLoads", "Table `worldstring_tables` has %u columns", worldstring_tables_result->GetFieldCount());
+    LogNotice("MySQLDataLoads : Table `worldstring_tables` has %u columns", worldstring_tables_result->GetFieldCount());
 
     _worldStringsStore.rehash(worldstring_tables_result->GetRowCount());
 
@@ -1272,7 +1272,7 @@ void MySQLDataStore::LoadWorldStringsTable()
 
     delete worldstring_tables_result;
 
-    LogDetail("MySQLDataLoads", "Loaded %u rows from `worldstring_tables` table in %u ms!", worldstring_tables_count, getMSTime() - start_time);
+    LogDetail("MySQLDataLoads : Loaded %u rows from `worldstring_tables` table in %u ms!", worldstring_tables_count, getMSTime() - start_time);
 }
 
 WorldStringTable const* MySQLDataStore::GetWorldString(uint32 entry)

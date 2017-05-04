@@ -333,7 +333,7 @@ void WorldSocket::InformationRetreiveCallback(WorldPacket & recvData, uint32 req
     mSession->m_latency = _latency;
     mSession->m_accountName = AccountName;
 
-    LogNotice("Auth", "%s from %s:%u [%ums]", AccountName.c_str(), GetRemoteIP().c_str(), GetRemotePort(), _latency);
+    LogNotice("Auth : %s from %s:%u [%ums]", AccountName.c_str(), GetRemoteIP().c_str(), GetRemotePort(), _latency);
     Authenticate();
 }
 

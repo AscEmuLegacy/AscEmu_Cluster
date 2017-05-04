@@ -26,7 +26,7 @@ void WorkerServerSocket::HandleAuthRequest(WorldPacket & pck)
     pck >> build;
     pck >> ver;
 
-    LogNotice("WSSocket", "Auth reply, server is %s build %u", ver.c_str(), build);
+    LogNotice("WorkerServerSocket : Auth reply, server is %s build %u", ver.c_str(), build);
 
     // accept it
     WorldPacket data(ISMSG_AUTH_RESULT, 4);
@@ -135,6 +135,7 @@ void WorkerServerSocket::HandleRegisterWorker(WorldPacket & pck)
     /* because we don't have any locks in the managers, this has to execute
     in the other thread. this is why I haven't deleted the packet yet
     */
+
     workerServer = new_server;
     pck.rpos(0);
     workerServer->QueuePacket(&pck);

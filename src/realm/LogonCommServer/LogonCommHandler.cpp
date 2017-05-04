@@ -110,7 +110,7 @@ void LogonCommHandler::Startup()
     // Try to connect to all logons.
     LoadRealmConfiguration();
 
-    LogNotice("LogonCommClient", "Loading forced permission strings...");
+    LogNotice("LogonCommClient : Loading forced permission strings...");
     QueryResult* result = sCharSQL->Query("SELECT login, permissions FROM account_forced_permissions");
     if (result != NULL)
     {
@@ -137,18 +137,18 @@ void LogonCommHandler::AddForcedPermission(std::string acct, std::string perm)
     ForcedPermissionMap::iterator itr = forced_permissions.find(acct);
     if (itr != forced_permissions.end())
     {
-        LogNotice("LogonCommClient", "Permission for %s already available!", account_name);
+        LogNotice("LogonCommClient : Permission for %s already available!", account_name);
         forced_permissions.erase(acct);
     }
 
-    LogNotice("LogonCommClient", "Permission set to %s for account %s", permission_string, account_name);
+    LogNotice("LogonCommClient : Permission set to %s for account %s", permission_string, account_name);
     forced_permissions.insert(make_pair(acct, perm));
 
 }
 
 void LogonCommHandler::ConnectAll()
 {
-    LogNotice("LogonCommClient", "Attempting to connect to logon server...");
+    LogNotice("LogonCommClient : Attempting to connect to logon server...");
     for (std::set<LogonServer*>::iterator itr = servers.begin(); itr != servers.end(); ++itr)
         Connect(*itr);
 }
@@ -170,10 +170,10 @@ void LogonCommHandler::Connect(LogonServer * server)
     logons[server] = conn;
     if (conn == 0)
     {
-        LogError("LogonCommClient", "Connection failed. Will try again in 10 seconds.");
+        LogError("LogonCommClient : Connection failed. Will try again in 10 seconds.");
         return;
     }
-    LogNotice("LogonCommClient", "Authenticating...");
+    LogNotice("LogonCommClient : Authenticating...");
     uint32 tt = (uint32)UNIXTIME + 10;
     conn->SendChallenge();
 
@@ -181,7 +181,7 @@ void LogonCommHandler::Connect(LogonServer * server)
     {
         if ((uint32)UNIXTIME >= tt)
         {
-            LogError("LogonCommClient", "Authentication timed out.");
+            LogError("LogonCommClient : Authentication timed out.");
             return;
         }
         Sleep(50);
@@ -190,19 +190,19 @@ void LogonCommHandler::Connect(LogonServer * server)
 
     if (conn->authenticated != 1)
     {
-        LogError("LogonCommClient", "Authentication failed.");
+        LogError("LogonCommClient : Authentication failed.");
         logons[server] = 0;
         conn->Disconnect();
         return;
     }
 
-    LogNotice("LogonCommClient", "Authentication OK.");
-    LogNotice("LogonCommClient", "Logonserver was connected on [%s:%u].", server->Address.c_str(), server->Port);
+    LogNotice("LogonCommClient : Authentication OK.");
+    LogNotice("LogonCommClient : Logonserver was connected on [%s:%u].", server->Address.c_str(), server->Port);
 
     // Send the initial ping
     conn->SendPing();
 
-    LogNotice("LogonCommClient", "Registering Realms...");
+    LogNotice("LogonCommClient : Registering Realms...");
     conn->_id = server->ID;
 
     RequestAddition(conn);
@@ -215,7 +215,7 @@ void LogonCommHandler::Connect(LogonServer * server)
         // Don't wait more than.. like 10 seconds for a registration
         if ((uint32)UNIXTIME >= st)
         {
-            LogError("LogonCommClient", "Realm registration timed out.");
+            LogError("LogonCommClient : Realm registration timed out.");
             logons[server] = 0;
             conn->Disconnect();
             break;
@@ -229,7 +229,7 @@ void LogonCommHandler::Connect(LogonServer * server)
     // Wait for all realms to register
     Sleep(200);
 
-    LogNotice("LogonCommClient", "Logonserver latency is %ums.", conn->latency);
+    LogNotice("LogonCommClient : Logonserver latency is %ums.", conn->latency);
 }
 
 void LogonCommHandler::AdditionAck(uint32 ID, uint32 ServID)

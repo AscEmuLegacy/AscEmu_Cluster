@@ -100,8 +100,7 @@ bool Master::Run(int argc, char ** argv)
 
     running = true;
 
-    int file_log_level = DEF_VALUE_NOT_SET;
-    int screen_log_level = DEF_VALUE_NOT_SET;
+    AscLog.SetFileLoggingLevel(Conf.MainConfig.getIntDefault("Log", "WorldFileLogLevel", 0));
 
     /* Initialize global timestamp */
     UNIXTIME = time(NULL);
@@ -109,7 +108,7 @@ bool Master::Run(int argc, char ** argv)
     /* Print Banner */
     PrintBanner();
 
-    LogDetail("Database", "Connecting to database...");
+    LogNotice("Database : Connecting to database...");
 
     sCharSQL = NULL;
     sWorldSQL = NULL;
@@ -120,21 +119,21 @@ bool Master::Run(int argc, char ** argv)
         return false;
     }
 
-    LogDetail("Database", "Connections established.");
-    LogDetail("Database", "Interface Created.");
+    LogDetail("Database : Connections established.");
+    LogDetail("Database : Interface Created.");
 
     ThreadPool.Startup();
     uint32 LoadingTime = getMSTime();
 
     _HookSignals();
 
-    LogDetail("Realmserver", "Loading DBC files...");
+    LogDetail("Realmserver : Loading DBC files...");
     // Todo we need it later
 
     new ClusterMgr;
     new ClientMgr;
 
-    LogDetail("Storage", "Begin DB Loading...");
+    LogDetail("Storage : Begin DB Loading...");
     new MySQLDataStore;
     sMySQLStore.LoadAdditionalTableConfig();
     sMySQLStore.LoadItemPagesTable();
@@ -143,7 +142,7 @@ bool Master::Run(int argc, char ** argv)
     sMySQLStore.LoadGameObjectPropertiesTable();
     sMySQLStore.LoadQuestPropertiesTable();
     sMySQLStore.LoadWorldMapInfoTable();
-    LogDetail("Storage", "DB Loading complete...");
+    LogDetail("Storage : DB Loading complete...");
 
     new AddonMgr;
 
@@ -177,7 +176,7 @@ bool Master::Run(int argc, char ** argv)
     int wsport = Conf.MainConfig.getIntDefault("Listen", "WorldServerPort", 8129);
 
 
-    LogNotice("Network", "Network Subsystem Started.");
+    LogNotice("Network : Network Subsystem Started.");
 
     // Create listener
     ListenSocket<WorldSocket> * ls = new ListenSocket<WorldSocket>(host.c_str(), wsport);
@@ -187,7 +186,7 @@ bool Master::Run(int argc, char ** argv)
         ThreadPool.ExecuteTask(ls);
 #endif
 
-    LogNotice("Network", "Opening Server Port...");
+    LogNotice("Network : Opening Server Port...");
     ListenSocket<WorkerServerSocket> * isl = new ListenSocket<WorkerServerSocket>("0.0.0.0", 11010);
     bool ssc = isl->IsOpen();
 
@@ -200,7 +199,7 @@ bool Master::Run(int argc, char ** argv)
     sSocketMgr.SpawnWorkerThreads();
 
     LoadingTime = getMSTime() - LoadingTime;
-    LogNotice("Server", "Ready for connections. Startup time: %ums \n", LoadingTime);
+    LogNotice("Server : Ready for connections. Startup time: %ums \n", LoadingTime);
 
     m_startTime = uint32(UNIXTIME);
 
@@ -233,11 +232,11 @@ bool Master::Run(int argc, char ** argv)
     }
 
     // begin server shutdown
-    LogNotice("Shutdown", "Initiated at %s", Util::GetCurrentDateTimeString());
+    LogNotice("Shutdown : Initiated at %s", Util::GetCurrentDateTimeString());
     bServerShutdown = true;
 
     // send a query to wake it up if its inactive
-    LogNotice("Database", "Clearing all pending queries...");
+    LogNotice("Database : Clearing all pending queries...");
 
     // kill the database thread first so we don't lose any queries/data
     sCharSQL->EndThreads();
@@ -247,17 +246,17 @@ bool Master::Run(int argc, char ** argv)
     delete sCharSQL;
     delete sWorldSQL;
 
-    LogNotice("Network", "Shutting down network subsystem.");
+    LogNotice("Network : Shutting down network subsystem.");
 #ifdef WIN32
     sSocketMgr.ShutdownThreads();
 #endif
     sSocketMgr.CloseAll();
 
-    LogNotice("Network", "Closing inter-communication threads");
+    LogNotice("Network : Closing inter-communication threads");
     isl->Close();
     ls->Close();
 
-    LogNotice("ThreadPool", "Shutting down thread pool");
+    LogNotice("ThreadPool : Shutting down thread pool");
     ThreadPool.Shutdown();
 
     delete LogonCommHandler::getSingletonPtr();
@@ -273,7 +272,7 @@ void OnCrash(bool Terminate)
     }
     catch (...)
     {
-        LogError("Database", "Threw exception waiting for queries to finish");
+        LogError("Database : Threw exception waiting for queries to finish");
     }
 
     try
@@ -283,7 +282,7 @@ void OnCrash(bool Terminate)
     }
     catch (...)
     {
-        LogError("Network", "Threw exception telling world servers to save players");
+        LogError("Network : Threw exception telling world servers to save players");
     }
 }
 #endif
@@ -339,7 +338,7 @@ bool Master::StartCharDb()
         dbPassword.c_str(), dbDatabase.c_str(), connections,
         16384))
     {
-        LogError("Configs", "Connection to CharacterDatabase failed. Check your database configurations!");
+        LogError("Configs : Connection to CharacterDatabase failed. Check your database configurations!");
         return false;
     }
 
@@ -398,7 +397,7 @@ bool Master::StartWorldDb()
         dbPassword.c_str(), dbDatabase.c_str(), connections,
         16384))
     {
-        LogError("Configs", "Connection to WorldDatabase failed. Check your database configurations!");
+        LogError("Configs : Connection to WorldDatabase failed. Check your database configurations!");
         return false;
     }
 
@@ -559,7 +558,7 @@ void TaskList::spawn()
     else
         threadcount = 1;
 
-    LogNotice("World", "Beginning %s server startup with %u threads.", (threadcount == 1) ? "progressive" : "parallel", threadcount);
+    LogNotice("World : Beginning %s server startup with %u threads.", (threadcount == 1) ? "progressive" : "parallel", threadcount);
 
     for (uint32 x = 0; x < threadcount; ++x)
         ThreadPool.ExecuteTask(new TaskExecutor(this));

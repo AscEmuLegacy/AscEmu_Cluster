@@ -85,7 +85,7 @@ void ClusterInterface::ForwardWoWPacket(uint16 opcode, uint32 size, const void *
 
 void ClusterInterface::ConnectionDropped()
 {
-    LogWarning("ClusterInterface", "Socket disconnected, will attempt reconnect later");
+    LogWarning("ClusterInterface : Socket disconnected, will attempt reconnect later");
     m_connected = false;
     retry = true;
     _clientSocket = NULL;
@@ -94,16 +94,16 @@ void ClusterInterface::ConnectionDropped()
 void ClusterInterface::ConnectToRealmServer()
 {
     std::string hostname;
-    int port;
+    int port = 0;
     std::string strkey;
 
-    Config.MainConfig.getStringDefault("Cluster", "RSHostName", hostname);
-    Config.MainConfig.getIntDefault("Cluster", "RSPort", port);
-    Config.MainConfig.getStringDefault("Cluster", "Key", strkey);
+    hostname = Config.MainConfig.getStringDefault("Cluster", "RSHostName", hostname);
+    port = Config.MainConfig.getIntDefault("Cluster", "RSPort", port);
+    strkey = Config.MainConfig.getStringDefault("Cluster", "Key", strkey);
 
     if(hostname.empty() || port == 0 || strkey.empty())
     {
-        LogError("ClusterInterface", "Could not get necessary fields from config file. Please fix and rehash.");
+        LogError("ClusterInterface : Could not get necessary fields from config file. Please fix and rehash.");
         return;
     }
 
@@ -113,19 +113,19 @@ void ClusterInterface::ConnectToRealmServer()
     k.Finalize();
     memcpy(key, k.GetDigest(), 20);
 
-    LogNotice("ClusterInterface", "Connecting to %s port %u", hostname.c_str(), port);
+    LogNotice("ClusterInterface : Connecting to %s port %u", hostname.c_str(), port);
     WSClient * s = ConnectTCPSocket<WSClient>(hostname.c_str(), port);
     if (!s)
     {
         retry = true;
         lastConnectTime = time(NULL);
-        LogError("ClusterInterface", "Could not connect to %s:%u", hostname.c_str(), port);
-        LogError("ClusterInterface", "Next try in 30 sec");
+        LogError("ClusterInterface : Could not connect to %s:%u", hostname.c_str(), port);
+        LogError("ClusterInterface : Next try in 30 sec");
         return;
     }
 
     SetSocket(s);
-    LogNotice("ClusterInterface", "Connected to %s:%u", hostname.c_str(), port);
+    LogNotice("ClusterInterface : Connected to %s:%u", hostname.c_str(), port);
 
     _clientSocket = s;
     m_latency = getMSTime();
@@ -150,10 +150,10 @@ void ClusterInterface::HandleAuthRequest(WorldPacket & pck)
         SendPacket(&data);
 
         m_latency = getMSTime() - m_latency;
-        LogNotice("ClusterInterface", "Latency between realm server is %u ms", m_latency);
+        LogNotice("ClusterInterface : Latency between realm server is %u ms", m_latency);
     }
     else
-        LogError("ClusterInterface", "Incorrect BUILD Revision");
+        LogError("ClusterInterface : Incorrect BUILD Revision");
 }
 
 void ClusterInterface::Ping(WorldPacket & pck)
@@ -180,11 +180,11 @@ void ClusterInterface::HandleAuthResult(WorldPacket & pck)
 
     uint32 res;
     pck >> res;
-    printf("Auth Result %u \n", res);
-    LogDebug("ClusterInterface", "Auth Result: %u", res);
+
+    LogDebug("ClusterInterface : Auth Result: %u", res);
     if (!res)
     {
-        LogError("ClusterInterface", "Authentication Failed");
+        LogError("ClusterInterface : Authentication Failed");
         retry = true;
         _clientSocket->Disconnect();
         _clientSocket = 0;
@@ -208,6 +208,7 @@ void ClusterInterface::HandleAuthResult(WorldPacket & pck)
     }
 
     printf("ICMSG_REGISTER_WORKER \n");
+
     WorldPacket data(ICMSG_REGISTER_WORKER, 4 + (sizeof(std::vector<uint32>::size_type) * maps.size()) + (sizeof(std::vector<uint32>::size_type) * instancedmaps.size()));
     data << uint32(1);//BUILD_REVISION
     data << maps;
@@ -220,13 +221,13 @@ void ClusterInterface::HandleRegisterResult(WorldPacket & pck)
 {
     uint32 res;
     pck >> res;
-    printf("HandleRegisterResult %u \n", res);
+
     if (!res)
     {
         _clientSocket->Disconnect();
         _clientSocket = NULL;
     }
-    LogDebug("ClusterInterface", "Register Result: %u", res);
+    LogDebug("ClusterInterface : Register Result: %u", res);
 }
 
 void ClusterInterface::HandlePlayerLogin(WorldPacket & pck)
@@ -268,7 +269,7 @@ void ClusterInterface::HandlePlayerLogin(WorldPacket & pck)
 
         /* tell the client his login failed before deleting the session */
         data.Initialize(SMSG_CHARACTER_LOGIN_FAILED);
-        data << uint8(62);
+        data << uint8(E_CHAR_LOGIN_NO_WORLD);
         so->SendPacket(&data);
 
         /* destroy the session */
@@ -343,7 +344,7 @@ void ClusterInterface::Update()
         if (opcode < IMSG_NUM_TYPES && ClusterInterface::PHandlers[opcode] != 0)
             (this->*ClusterInterface::PHandlers[opcode])(*pck);
         else
-            LogError("ClusterInterface", "Unhandled packet %u\n", opcode);
+            LogError("ClusterInterface : Unhandled packet %u\n", opcode);
     }
 
     uint32 t = (uint32)UNIXTIME;
@@ -589,10 +590,9 @@ bool WorldSession::ClusterTryPlayerLogin(uint32 Guid, uint8 _class, uint32 Clien
 
     if (plr == NULL)
     {
-        LogError("ClusterInterface", "Class %u unknown!", _class);
+        LogError("ClusterInterface : Class %u unknown!", _class);
         uint8 respons = E_CHAR_LOGIN_NO_CHARACTER;
         OutPacket(SMSG_CHARACTER_LOGIN_FAILED, 1, &respons);
-        printf("plr is null \n");
         return false;
     }
 
@@ -604,7 +604,7 @@ bool WorldSession::ClusterTryPlayerLogin(uint32 Guid, uint8 _class, uint32 Clien
 
     m_lastPing = (uint32)UNIXTIME;
 
-    LogDebug("WorldSession", "Async loading player %u", Guid);
+    LogDebug("WorldSession : Async loading player %u", Guid);
     m_loggingInPlayer = plr;
     plr->LoadFromDB(Guid);
     return true;
@@ -695,7 +695,7 @@ void ClusterInterface::HandleCreatePlayer(WorldPacket & pck)
     pck >> opcode;
     pck >> size;
 
-    LogDetail("CMSG_CHAR_CREATE: accountid %u, opcode %u, size %u", accountid, opcode, size);
+    LogDetail("CMSG_CHAR_CREATE : accountid %u, opcode %u, size %u", accountid, opcode, size);
 
     if (_sessions[accountid] != NULL)
         return;
