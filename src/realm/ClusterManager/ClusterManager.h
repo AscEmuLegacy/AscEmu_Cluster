@@ -19,8 +19,10 @@ class ClusterMgr : public Singleton<ClusterMgr>
 {
     typedef std::map<uint32, Servers*> WorkerServerMap;
 
+private:
     RWLock m_lock;
     Mutex Slave_Lock;
+    std::set<WorkerServer*> JunkServers;
     WorkerServer* WorkerServers[MAX_WORKER_SERVERS];
     WorkerServerMap workerServers;
 

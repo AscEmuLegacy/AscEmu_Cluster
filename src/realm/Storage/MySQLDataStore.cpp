@@ -1177,8 +1177,8 @@ void MySQLDataStore::LoadWorldMapInfoTable()
     QueryResult* worldmap_info_result = sWorldSQL->Query("SELECT entry, screenid, type, maxplayers, minlevel, minlevel_heroic, repopx, repopy, repopz, repopentry, "
         //                                                           10       11      12         13           14                15              16
         "area_name, flags, cooldown, lvl_mod_a, required_quest_A, required_quest_H, required_item, "
-        //                                                              17              18              19                20
-        "heroic_keyid_1, heroic_keyid_2, viewingDistance, required_checkpoint, workerid, cluster_loads_map FROM worldmap_info");
+        //                                                              17              18              19          
+        "heroic_keyid_1, heroic_keyid_2, viewingDistance, required_checkpoint, cluster_loads_map FROM worldmap_info");
     if (worldmap_info_result == nullptr)
     {
         LogNotice("MySQLDataLoads : Table `worldmap_info` is empty!");
@@ -1219,8 +1219,7 @@ void MySQLDataStore::LoadWorldMapInfoTable()
         mapInfo.heroic_key_2 = fields[18].GetUInt32();
         mapInfo.update_distance = fields[19].GetFloat();
         mapInfo.checkpoint_id = fields[20].GetUInt32();
-        mapInfo.workerid = fields[21].GetUInt32();
-        mapInfo.cluster_loads_map = fields[22].GetBool();
+        mapInfo.cluster_loads_map = fields[21].GetBool();
 
         ++world_map_info_count;
     } while (worldmap_info_result->NextRow());

@@ -782,7 +782,6 @@ struct MapInfo
     uint32 heroic_key_2;
     float update_distance;
     uint32 checkpoint_id;
-    uint32 workerid;
     bool cluster_loads_map;
 
     //////////////////////////////////////////////////////////////////////////////////////////

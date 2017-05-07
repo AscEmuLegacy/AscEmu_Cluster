@@ -15,19 +15,24 @@ class WorkerServer
     uint32 m_id;
     WorkerServerSocket * m_socket;
     FastQueue<WorldPacket*, Mutex> m_recvQueue;
-    std::list<Instance*> m_instances;
 
 public:
     static void InitHandlers();
     WorkerServer(uint32 id, WorkerServerSocket * s);
     ~WorkerServer() { sSocketGarbageCollector.QueueSocket(m_socket); };
 
-    _inline size_t GetInstanceCount() { return m_instances.size(); }
     _inline void SendPacket(WorldPacket * data) { if (m_socket) m_socket->SendPacket(data); }
     _inline void SendWoWPacket(Session * from, WorldPacket * data) { if (m_socket) m_socket->SendWoWPacket(from, data); }
-    _inline void AddInstance(Instance * pInstance) { m_instances.push_back(pInstance); }
     _inline void QueuePacket(WorldPacket * data) { m_recvQueue.Push(data); }
     _inline uint32 GetID() { return m_id; }
+
+    bool Destructable() { return m_socket == nullptr; };
+
+    _inline void RemoveSocket()
+    {
+        sSocketGarbageCollector.QueueSocket(m_socket);
+        m_socket = nullptr;
+    };
 
     void Update();
 

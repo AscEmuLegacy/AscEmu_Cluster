@@ -112,7 +112,7 @@ void WorkerServer::HandleRegisterWorker(WorldPacket & pck)
 
     // Filter Maps for This Worker
     for (std::vector<uint32>::iterator itr = maps.begin(); itr != maps.end(); ++itr)
-                result2.push_back(*itr);
+        result2.push_back(*itr);
 
     //Append Maps
     for (std::vector<uint32>::iterator itr = result2.begin(); itr != result2.end(); ++itr)
@@ -138,7 +138,7 @@ void WorkerServer::HandleRegisterWorker(WorldPacket & pck)
         i->Mapid  = (*itr2);
         i->workerServer = this;
         sClusterMgr.Maps.insert(std::pair<uint32, Servers*>((*itr2), i));
-        LogDetail("ClusterMgr : Allocating map %u to worker %u", (*itr2), GetID());
+        LogDetail("ClusterMgr : Allocating instanced map %u to worker %u", (*itr2), GetID());
     }
 }
 

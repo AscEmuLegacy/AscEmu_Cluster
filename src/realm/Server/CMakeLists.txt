@@ -9,6 +9,7 @@ set(SRC_SERVER_FILES
    ${PATH_PREFIX}/Master.hpp
    ${PATH_PREFIX}/PeriodicFunctionCall_Thread.h
    ${PATH_PREFIX}/Structures.h
+   ${PATH_PREFIX}/Definitions.h
 )
 
 source_group(Server FILES ${SRC_SERVER_FILES})

@@ -78,6 +78,13 @@ void ClusterMgr::Update()
         if (WorkerServers[i])
             WorkerServers[i]->Update();
 
+    for (auto itr : JunkServers)
+        if ((itr)->Destructable())
+        {
+            LogNotice("Delete Worker Server %u Completly", itr->GetID());
+            delete (itr);
+        }
+
     Slave_Lock.Release();
 }
 
@@ -87,42 +94,40 @@ void ClusterMgr::DistributePacketToAll(WorldPacket * data, WorkerServer * exclud
 
     for (uint32 i = 0; i <= m_maxWorkerServer; ++i)
         if (WorkerServers[i] && WorkerServers[i] != exclude)
-            WorkerServers[i]->SendPacket(data);
+            WorkerServers[i]->SendPacket(data);            
 
     Slave_Lock.Release();
 }
 
-void ClusterMgr::OnServerDisconnect(WorkerServer* s)
+void ClusterMgr::OnServerDisconnect(WorkerServer* workerServer)
 {
-    m_lock.AcquireWriteLock();
+    Slave_Lock.Acquire();
+
+    uint32_t workerId = workerServer->GetID();
 
     if (Maps.size())
     {
         WorkerServerMap::iterator itr = Maps.begin();
         while (itr != Maps.end())
         {
-            if (itr->second->workerServer == s)
+            if (itr->second->workerServer == workerServer)
             {
-                LogWarning("ClusterMgr : Removing Map %u on WorkerServer %u due to worker server disconnection", s->GetID(), itr->second->Mapid);
+                LogWarning("ClusterMgr : Removing Map %u on WorkerServer %u due to worker server disconnection", itr->second->Mapid, workerId);
                 delete itr->second;
                 itr = Maps.erase(itr);
             }
             else
                 itr++;
         }
-        Maps.clear();
     }
 
-    for (uint32 i = 0; i < m_maxWorkerServer; i++)
+    if (WorkerServers[workerId] == workerServer)
     {
-        if (WorkerServers[i] == s)
-        {
-            LogWarning("ClusterMgr : Removing Worker Server due to disconnection");
-            WorkerServers[i] = NULL;
-        }
+        LogWarning("ClusterMgr : Removing Worker Server due to disconnection");
+        JunkServers.insert(WorkerServers[workerId]);
+        workerServer->RemoveSocket();
+        WorkerServers[workerId] = NULL;
     }
 
-    delete s;
-
-    m_lock.ReleaseWriteLock();
+    Slave_Lock.Release();
 }

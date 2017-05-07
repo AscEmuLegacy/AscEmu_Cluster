@@ -69,6 +69,7 @@ void WorldSocket::OnDisconnect()
     if (mSession)
     {
         mSession->SetServer(NULL);
+        mSession->m_socket = NULL;
         sClientMgr.DestroySession(mSession->GetSessionId());
         mSession = NULL;
     }
@@ -79,11 +80,14 @@ void WorldSocket::OnDisconnect()
         mRequestID = 0;
     }
 
-    if (mQueued)
-    {
-        //sWorld.RemoveQueuedSocket(this);    // Remove from queued sockets.
-        mQueued = false;
-    }
+    // clear buffer
+    queueLock.Acquire();
+
+    WorldPacket *pck;
+    while ((pck = _queue.Pop()))
+        delete pck;
+
+    queueLock.Release();
 }
 
 void WorldSocket::OutPacket(uint16 opcode, size_t len, const void* data)
@@ -103,9 +107,13 @@ void WorldSocket::OutPacket(uint16 opcode, size_t len, const void* data)
     {
         /* queue the packet */
         queueLock.Acquire();
+
         WorldPacket* pck = new WorldPacket(opcode, len);
-        if (len) pck->append((const uint8*)data, len);
+        if (len)
+            pck->append((const uint8*)data, len);
+
         _queue.Push(pck);
+
         queueLock.Release();
     }
 }
