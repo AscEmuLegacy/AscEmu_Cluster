@@ -150,6 +150,16 @@ bool Master::Run(int argc, char ** argv)
 
     new AddonMgr;
 
+    if (!ChannelMgr::getSingletonPtr())
+        new ChannelMgr;
+
+    new ChatHandler;
+
+    channelmgr.seperatechannels = Conf.MainConfig.getBoolDefault("Server", "SeperateChatChannels", false);
+    m_lfgForNonLfg = Conf.MainConfig.getBoolDefault("Server", "EnableLFGJoin", false);
+
+    Channel::LoadConfSettings();
+
 #define MAKE_TASK(sp, ptr) tl.AddTask(new Task(new CallbackP0<sp>(sp::getSingletonPtr(), &sp::ptr)))
     // Fill the task list with jobs to do.
     TaskList tl;

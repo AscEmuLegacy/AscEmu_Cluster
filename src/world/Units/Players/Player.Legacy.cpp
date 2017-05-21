@@ -134,6 +134,7 @@ Player::Player(uint32 guid)
     //WayPoint
     waypointunit(NULL),
     m_nextSave(getMSTime() + worldConfig.getIntRate(INTRATE_SAVE)),
+    m_nextRealmSave(getMSTime() + 1000),
     m_lifetapbonus(0),
     PlayerTalkClass(NULL),
     m_bUnlimitedBreath(false),
@@ -1205,6 +1206,7 @@ void Player::Update(unsigned long time_passed)
         //Send Infos
         sClusterInterface.SendPlayerInfo(GetLowGUID());
         m_nextRealmSave = getMSTime() + 10000;
+        LogNotice("Player : Update RPlayer Info for Guid %u", GetLowGUID());
     }
 
     if (m_pvpTimer)
@@ -5074,6 +5076,41 @@ void Player::CleanupChannels()
     }
 }
 
+void Player::JoinedChannel(uint32 channelId)
+{
+    Channel * pChannel;
+    pChannel = channelmgr.GetChannel(channelId);
+
+    m_channels.insert(pChannel);
+}
+
+void Player::LeftChannel(uint32 channelId)
+{
+    Channel * pChannel;
+    pChannel = channelmgr.GetChannel(channelId);
+
+    m_channels.erase(pChannel);
+}
+
+void Player::ClusterCleanupChannels()
+{
+    std::set<Channel*>::iterator i;
+    std::vector<uint32> channels;
+    uint32 cid = 0;
+
+    for (i = m_channels.begin(); i != m_channels.end();)
+    {
+        cid = ++cid;
+        ++i;
+        channels.push_back(cid);
+    }
+    WorldPacket data(ICMSG_CHANNEL_UPDATE, (sizeof(std::vector<uint32>::size_type) * channels.size()) + 5);
+    data << uint8(PART_ALL_CHANNELS); //part all channels
+    data << GetLowGUID();
+    data << channels;
+    sClusterInterface.SendPacket(&data);
+}
+
 void Player::SendInitialActions()
 {
 #if VERSION_STRING == Cata
@@ -7941,7 +7978,7 @@ void Player::ZoneUpdate(uint32 ZoneId)
     }
 
     at = MapManagement::AreaManagement::AreaStorage::GetAreaById(ZoneId);
-
+    /*
     if (!m_channels.empty() && at)
     {
         // change to zone name, not area name
@@ -7989,15 +8026,32 @@ void Player::ZoneUpdate(uint32 ZoneId)
             }
         }
     }
-
+*/
     SendInitialWorldstates();
 
-    UpdateChannels(static_cast<int16>(ZoneId));
+    auto at2 = MapManagement::AreaManagement::AreaStorage::GetAreaById(ZoneId);
+    if (!at2)
+    {
+        assert(false && ">>> REPORT THIS ERROR <<< - Could not find area with ID: " && ZoneId);
+        return;     // Zyres: CID 123873
+    }
+    
+    WorldPacket data(ICMSG_CHANNEL_UPDATE, 4 + 32 + 4 + 4 + 4);
+    data << uint8(UPDATE_CHANNELS_ON_ZONE_CHANGE); //update channels on zone change
+    data << GetLowGUID();
+    data << at->area_name[0];
+    data << GetMapId();
+    data << ZoneId;
+    data << at2->area_name[0];
+    data << at2->flags;
+    sClusterInterface.SendPacket(&data);
+
+    //UpdateChannels(static_cast<int16>(ZoneId));
 }
 
 void Player::UpdateChannels(uint16 AreaID)
 {
-    std::set<Channel*>::iterator i;
+    /*std::set<Channel*>::iterator i;
     Channel* c;
     std::string channelname, AreaName;
 
@@ -8065,7 +8119,7 @@ void Player::UpdateChannels(uint16 AreaID)
             c->Part(this);
             chn->AttemptJoin(this, NULL);
         }
-    }
+    }*/
 }
 
 #if VERSION_STRING != Cata

@@ -52,6 +52,11 @@ This file is released under the MIT license. See README-MIT for more information
 #include "../world/Units/Players/PlayerDefines.hpp"
 #include "../realm/Management/AddonMgr.h"
 #include "../shared/CrashHandler.h"
+#include "../realm/Chat/Chat.h"
+#include "../realm/Chat/Channel.h"
+#include "../realm/Chat/ChannelMgr.h"
+#include "../world/Server/WUtil.h"
+#include "../shared/Errors.h"
 
 #ifndef WIN32
 #ifdef USING_BIG_ENDIAN

@@ -149,12 +149,13 @@ class SERVER_DECL Channel
         bool m_muted;
         bool m_announce;
         uint32 m_team;
+        uint32 m_channelId;
 
         inline size_t GetNumMembers() { return m_members.size(); }
 
         uint32 m_minimumLevel;
 
-        Channel(const char* name, uint32 team, uint32 type_id);
+        Channel(const char* name, uint32 team, uint32 type_id, uint32 id);
         ~Channel();
 
         void AttemptJoin(Player* plr, const char* password);

@@ -33,13 +33,16 @@ class SERVER_DECL ChannelMgr : public Singleton<ChannelMgr>
         Channel* GetCreateChannel(const char* name, Player* p, uint32 type_id);
         Channel* GetChannel(const char* name, Player* p);
         Channel* GetChannel(const char* name, uint32 team);
+        Channel* GetChannel(uint32 id);
         void RemoveChannel(Channel* chn);
         bool seperatechannels;
 
     private:
 
         typedef std::map<std::string, Channel*> ChannelList;
-
+        typedef std::map<uint32, Channel*> ChannelMap;
+        ChannelMap m_idToChannel;
+        uint32 m_idHigh;
         ChannelList Channels[2];
 
         Mutex lock;

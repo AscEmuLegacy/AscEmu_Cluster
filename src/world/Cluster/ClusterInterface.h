@@ -52,7 +52,7 @@ public:
         m_onlinePlayerMapMutex.Acquire();
         itr = _onlinePlayers.find(guid);
         m_onlinePlayerMapMutex.Release();
-        return (itr == _onlinePlayers.end()) ? 0 : itr->second;
+        return (itr == _onlinePlayers.end()) ? NULL : itr->second;
     }
 
     WorldSession * GetSession(uint32 sid) { return _sessions[sid]; }
@@ -68,11 +68,12 @@ public:
     void HandlePackedPlayerInfo(WorldPacket & pck);
     void HandlePlayerInfo(WorldPacket & pck);
     void HandleWoWPacket(WorldPacket & pck);
-    void HandlePlayerChangedServers(WorldPacket & pck);
     void HandleSaveAllPlayers(WorldPacket & pck);
     void HandleTransporterMapChange(WorldPacket & pck);
     void HandleCreatePlayer(WorldPacket & pck);
     void HandleDestroyPlayerInfo(WorldPacket & pck);
+    void HandleChannelAction(WorldPacket & pck);
+    void HandleChannelLFGDungeonStatusRequest(WorldPacket & pck);
 
     inline void QueuePacket(WorldPacket* pck)
     {

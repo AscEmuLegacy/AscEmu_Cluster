@@ -207,3 +207,139 @@ void ClientMgr::DestroyRPlayerInfo(uint32 guid)
     }
     m_lock.ReleaseWriteLock();
 }
+
+void RPlayerInfo::JoinedChannel(Channel* c)
+{
+    if (c != NULL)
+        m_channels.insert(c);
+}
+
+void RPlayerInfo::LeftChannel(Channel* c)
+{
+    if (c != NULL)
+        m_channels.erase(c);
+}
+
+void RPlayerInfo::CleanupChannels()
+{
+    std::set<Channel*>::iterator i;
+    Channel* c;
+    for (i = m_channels.begin(); i != m_channels.end();)
+    {
+        c = *i;
+        ++i;
+
+        c->Part(this, true);
+    }
+}
+
+void RPlayerInfo::OnZoneUpdate(std::string updatename, std::string updatename2,uint32 mapId,uint32 ZoneId, uint32 flags)
+{
+    if (!m_channels.empty())
+    {
+        // change to zone name, not area name
+        for (std::set<Channel*>::iterator itr = m_channels.begin(), nextitr; itr != m_channels.end(); itr = nextitr)
+        {
+            Channel* chn;
+            nextitr = itr;
+            ++nextitr;
+            chn = (*itr);
+            // Check if this is a custom channel (i.e. global)
+            //if (!((*itr)->m_flags & CHANNEL_FLAGS_CUSTOM))  // 0x10
+              //  continue;
+
+            if (chn->m_flags & CHANNEL_FLAGS_LFG)
+                continue;
+
+            char updatedName[95];
+
+            auto chat_channels = sChatChannelsStore.LookupEntry(chn->m_id);
+            if (!chat_channels)
+            {
+                LOG_ERROR("Invalid channel entry %u for %s", chn->m_id, chn->m_name.c_str());
+                return;
+            }
+
+            //printf("%s \n", updatename.c_str());
+
+            snprintf(updatedName, 95, chat_channels->name_pattern[0], updatename.c_str());
+
+            Channel* newChannel = channelmgr.GetCreateChannel(updatedName, NULL, chn->m_id);
+            if (newChannel == NULL)
+            {
+                LOG_ERROR("Could not create channel %s!", updatedName);
+                return; // whoops?
+            }
+
+            if (chn != newChannel)   // perhaps there's no need
+            {
+                // join new channel
+                newChannel->AttemptJoin(this, "");
+                // leave the old channel
+                chn->Part(this, false);
+            }
+        }
+    }
+
+    std::set<Channel*>::iterator i;
+    Channel* c;
+    std::string channelname, AreaName;
+
+    if (mapId == 450)
+        ZoneId = 2917;
+    else if (mapId == 449)
+        ZoneId = 2918;
+
+    //Check for instances?
+    if (!ZoneId || ZoneId == 0xFFFF)
+    {
+        MapInfo const* pMapinfo = sMySQLStore.GetWorldMapInfo(mapId);
+        if (IS_INSTANCE(mapId))
+            AreaName = pMapinfo->name;
+        else
+            return;//How'd we get here?
+    }
+    else
+    {
+        AreaName = updatename2;
+        if (AreaName.length() < 2)
+        {
+            MapInfo const* pMapinfo = sMySQLStore.GetWorldMapInfo(mapId);
+            AreaName = pMapinfo->name;
+        }
+    }
+
+    for (i = m_channels.begin(); i != m_channels.end();)
+    {
+        c = *i;
+        ++i;
+
+        if (!c->m_general || c->m_name == "LookingForGroup")//Not an updatable channel.
+            continue;
+
+        if (strstr(c->m_name.c_str(), "General"))
+            channelname = "General";
+        else if (strstr(c->m_name.c_str(), "Trade"))
+            channelname = "Trade";
+        else if (strstr(c->m_name.c_str(), "LocalDefense"))
+            channelname = "LocalDefense";
+        else if (strstr(c->m_name.c_str(), "GuildRecruitment"))
+            channelname = "GuildRecruitment";
+        else
+            continue;//Those 4 are the only ones we want updated.
+        channelname += " - ";
+        if ((strstr(c->m_name.c_str(), "Trade") || strstr(c->m_name.c_str(), "GuildRecruitment")) && (flags & 0x0200 || flags & 0x0020))
+        {
+            channelname += "City";
+        }
+        else
+            channelname += AreaName;
+
+        Channel* chn = channelmgr.GetCreateChannel(channelname.c_str(), this, c->m_id);
+        if (chn != NULL && !chn->HasMember(this))
+        {
+            c->Part(this, false);
+            chn->AttemptJoin(this, NULL);
+        }
+    }
+}

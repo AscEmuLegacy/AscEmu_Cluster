@@ -56,6 +56,24 @@ public:
     void SetAccountFlags(uint32 flags) { m_accountFlags = flags; }
     bool HasFlag(uint32 flag) { return (m_accountFlags & flag) != 0; }
 
+    bool CanUseCommand(std::string cmdstr)
+    {
+        if (m_GMPermissions.find("a") != std::string::npos)
+            return true;
+
+        if (cmdstr.length() <= 1)
+            return (m_GMPermissions.find(cmdstr) != std::string::npos);
+        else
+        {
+            for (size_t i = 0; i < cmdstr.length(); i++)
+            {
+                if (m_GMPermissions.find(cmdstr[i]) == std::string::npos)
+                    return false;
+            }
+        }
+        return true;
+    }
+
     void SendPacket(WorldPacket * data)
     {
         if (m_socket && m_socket->IsConnected())
@@ -74,6 +92,27 @@ public:
     void HandleItemPageQueryOpcode(WorldPacket & pck);
     void HandleNpcTextQueryOpcode(WorldPacket & pck);
     void HandleNameQueryOpcode(WorldPacket & pck);
+
+    /// Channel Opcodes (ChannelHandler.cpp)
+    void HandleChannelJoin(WorldPacket& recvPacket);
+    void HandleChannelLeave(WorldPacket& recvPacket);
+    void HandleChannelList(WorldPacket& recvPacket);
+    void HandleChannelPassword(WorldPacket& recvPacket);
+    void HandleChannelSetOwner(WorldPacket& recvPacket);
+    void HandleChannelOwner(WorldPacket& recvPacket);
+    void HandleChannelModerator(WorldPacket& recvPacket);
+    void HandleChannelUnmoderator(WorldPacket& recvPacket);
+    void HandleChannelMute(WorldPacket& recvPacket);
+    void HandleChannelUnmute(WorldPacket& recvPacket);
+    void HandleChannelInvite(WorldPacket& recvPacket);
+    void HandleChannelKick(WorldPacket& recvPacket);
+    void HandleChannelBan(WorldPacket& recvPacket);
+    void HandleChannelUnban(WorldPacket& recvPacket);
+    void HandleChannelAnnounce(WorldPacket& recvPacket);
+    void HandleChannelModerate(WorldPacket& recvPacket);
+    void HandleChannelNumMembersQuery(WorldPacket & recvPacket);
+    void HandleChannelRosterQuery(WorldPacket & recvPacket);
+    void HandleMessagechatOpcode(WorldPacket & recv_data);
 
 private:
     bool has_level_55_char; // death knights

@@ -39,6 +39,10 @@ void ClusterInterface::InitHandlers()
  
     PHandlers[ICMSG_REALM_PING_STATUS] = &ClusterInterface::Ping;
     PHandlers[ICMSG_WORLD_PONG_STATUS] = &ClusterInterface::Pong;
+
+    // Channel
+    PHandlers[ISMSG_CHANNEL_ACTION] = &ClusterInterface::HandleChannelAction;
+    PHandlers[ISMSG_CHANNEL_LFG_DUNGEON_STATUS_REQUEST] = &ClusterInterface::HandleChannelLFGDungeonStatusRequest;
 }
 
 ClusterInterface::ClusterInterface()
@@ -772,3 +776,57 @@ void ClusterInterface::SendPlayerInfo(uint32 guid)
     player->Pack(data);
     SendPacket(&data);
 };
+
+void ClusterInterface::HandleChannelAction(WorldPacket & pck)
+{
+    uint8 action;
+    pck >> action;
+
+    switch (action)
+    {
+    case CHANNEL_JOIN:
+    {
+        uint32 guid;
+        uint32 cid;
+        Player * pPlayer;
+
+        pck >> guid;
+        pck >> cid;
+
+        pPlayer = objmgr.GetPlayer(guid);
+        if (pPlayer == NULL)
+            return;
+        
+        pPlayer->JoinedChannel(cid);
+        LogDebug("ClusterInterface : Joined Channel %u \n", cid);
+        break;
+
+    }
+    case CHANNEL_PART:
+    {
+        uint32 guid;
+        uint32 cid;
+        Player * pPlayer;
+
+        pck >> guid;
+        pck >> cid;
+
+        pPlayer = objmgr.GetPlayer(guid);
+        if (pPlayer == NULL)
+            return;
+
+        pPlayer->LeftChannel(cid);
+        break;
+    }
+    default:
+    {
+        LogDebug("ClusterInterface : HandleChannelAction opcode, unhandled action %u", action);
+        return;
+    }
+    }
+}
+
+void ClusterInterface::HandleChannelLFGDungeonStatusRequest(WorldPacket & pck)
+{
+    
+}

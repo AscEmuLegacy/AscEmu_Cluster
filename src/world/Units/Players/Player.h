@@ -1141,6 +1141,10 @@ private:
         void LeftChannel(Channel* c);
         void CleanupChannels();
 
+        void JoinedChannel(uint32 channelId);
+        void LeftChannel(uint32 channelId);
+        void ClusterCleanupChannels();
+
         /////////////////////////////////////////////////////////////////////////////////////////
         // Attack stuff
         /////////////////////////////////////////////////////////////////////////////////////////
@@ -1600,6 +1604,11 @@ private:
             pRPlayer->iInstanceType = iInstanceType;
             pRPlayer->ClientBuild = GetSession()->GetClientBuild();
             pRPlayer->Team = m_team;
+            pRPlayer->IsAFK = m_cache->HasFlag(CACHE_PLAYER_FLAGS, PLAYER_FLAG_AFK);
+            pRPlayer->IsDND = m_cache->HasFlag(CACHE_PLAYER_FLAGS, PLAYER_FLAG_DND);
+            pRPlayer->IsGmOn = m_cache->HasFlag(CACHE_PLAYER_FLAGS, PLAYER_FLAG_GM);
+            m_cache->GetStringValue(CACHE_AFK_DND_REASON, pRPlayer->AFKreason);
+            m_cache->GetStringValue(CACHE_AFK_DND_REASON, pRPlayer->DNDreason);
             if (newRplr)
                 pRPlayer->references = 1;
             return pRPlayer;

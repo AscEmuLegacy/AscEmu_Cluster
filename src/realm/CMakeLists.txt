@@ -12,6 +12,7 @@ include(Storage/CMakeLists.txt)
 include(WorkerServer/CMakeLists.txt)
 include(Management/CMakeLists.txt)
 include(Storage/DBC/CMakeLists.txt)
+include(Chat/CMakeLists.txt)
 
 set(SRC_REALM_PROJECT
    ${CMAKE_CURRENT_SOURCE_DIR}/RealmStdAfx.cpp
@@ -35,6 +36,7 @@ set(sources
    ${SRC_SERVER_FILES}
    ${SRC_REALM_PROJECT}
    ${SRC_STORAGE_DBC_FILES}
+   ${SRC_CHAT_FILES}
 )
 
 include_directories(

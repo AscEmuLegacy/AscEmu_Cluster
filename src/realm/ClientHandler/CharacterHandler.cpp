@@ -331,6 +331,8 @@ void Session::HandlePlayerLogin(WorldPacket & pck)
     /* log the player into that WorkerServer */
     data.SetOpcode(ISMSG_PLAYER_LOGIN);
 
+    sClientMgr.AddStringPlayerInfo(plr);
+
     /* append info */
     data << uint32(guid) << uint32(m_currentPlayer->MapId) << uint32(InstanceId);
 

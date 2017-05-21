@@ -22,6 +22,11 @@ void WorkerServer::InitHandlers()
     PHandlers[ICMSG_CREATE_PLAYER] = &WorkerServer::HandleCreatePlayerResult;
     PHandlers[ICMSG_PLAYER_INFO] = &WorkerServer::HandlePlayerInfo;
     PHandlers[ICMSG_WORLD_PONG_STATUS] = &WorkerServer::Pong;
+
+    // Channel
+    PHandlers[ICMSG_CHANNEL_ACTION] = &WorkerServer::HandleChannelAction;
+    PHandlers[ICMSG_CHANNEL_UPDATE] = &WorkerServer::HandleChannelUpdate;
+    PHandlers[ICMSG_CHANNEL_LFG_DUNGEON_STATUS_REPLY] = &WorkerServer::HandleChannelLFGDungeonStatusReply;
 }
 
 WorkerServer::WorkerServer(uint32 id, WorkerServerSocket * s) : m_id(id), m_socket(s)
@@ -369,3 +374,174 @@ void WorkerServer::Pong(WorldPacket & pck)
     last_pong = uint32(time(NULL));
 }
 
+void WorkerServer::HandleChannelAction(WorldPacket & pck)
+{
+    uint8 action;
+    pck >> action;
+
+    switch (action)
+    {
+    case CHANNEL_JOIN:
+    {
+        uint32 guid;
+        uint32 cid;
+        RPlayerInfo * pRPlayer;
+        Channel * pChannel;
+
+        pck >> guid;
+        pck >> cid;
+
+        pRPlayer = sClientMgr.GetRPlayer(guid);
+        if (pRPlayer == NULL)
+            return;
+
+        pChannel = channelmgr.GetChannel(cid);
+        if (pChannel != NULL)
+        {
+            pChannel->AttemptJoin(pRPlayer, "");
+        }
+        break;
+
+    }
+    case CHANNEL_PART:
+    {
+        uint32 guid;
+        uint32 cid;
+        RPlayerInfo * pRPlayer;
+        Channel * pChannel;
+
+        pck >> guid;
+        pck >> cid;
+
+        pRPlayer = sClientMgr.GetRPlayer(guid);
+        if (pRPlayer == NULL)
+            return;
+
+        pChannel = channelmgr.GetChannel(cid);
+        if (pChannel != NULL)
+        {
+            pChannel->Part(pRPlayer, true);
+        }
+        break;
+    }
+    case CHANNEL_SAY:
+    {
+        std::string channelname;
+        uint32 guid;
+        std::string message;
+        uint32 for_gm_guid;
+        bool forced;
+        Channel * pChannel;
+        RPlayerInfo * pRPlayer;
+        RPlayerInfo * pGM_RPlayer = NULL;
+
+        pck >> channelname;
+        pck >> guid;
+        pck >> message;
+        pck >> for_gm_guid;
+        pck >> forced;
+
+        pRPlayer = sClientMgr.GetRPlayer(guid);
+        if (pRPlayer == NULL)
+            return;
+
+        if (for_gm_guid)
+            pGM_RPlayer = sClientMgr.GetRPlayer(for_gm_guid);
+
+        pChannel = channelmgr.GetChannel(channelname.c_str(), pRPlayer);
+        if (pChannel)
+            pChannel->Say(pRPlayer, message.c_str(), for_gm_guid ? pGM_RPlayer : NULL, forced);
+        break;
+    }
+    default:
+    {
+        LogDebug("WorkerServer : HandleChannelAction opcode, unhandled action %u", action);
+        return;
+    }
+    }
+}
+
+void WorkerServer::HandleChannelUpdate(WorldPacket & pck)
+{
+    uint8 updatetype;
+    pck >> updatetype;
+
+    LogDebug("WorkerServer : Received ICMSG_CHANNEL_UPDATE opcode, update type %u", updatetype);
+
+    uint32 guid;
+    RPlayerInfo * plr = NULL;
+    pck >> guid;
+
+    LogDebug("WorkerServer : Received ICMSG_CHANNEL_UPDATE opcode, from player guid %u", guid);
+    plr = sClientMgr.GetRPlayer(guid);
+    if (plr == NULL)
+        return;
+
+    switch (updatetype)
+    {
+    case UPDATE_CHANNELS_ON_ZONE_CHANGE:
+    {
+        LogDebug("WorkerServer : HandleChannelUpdate opcode, UPDATE_CHANNELS_ON_ZONE_CHANGE");
+        std::string updatename;
+        std::string updatename2;
+        uint32 MapId;
+        uint32 ZoneId;
+        uint32 Flags;
+
+        pck >> updatename;
+        pck >> MapId;
+        pck >> ZoneId;
+        pck >> updatename2;
+        pck >> Flags;
+
+        plr->OnZoneUpdate(updatename, updatename2, MapId, ZoneId, Flags);        
+    }
+    case PART_ALL_CHANNELS:
+    {
+
+    }
+    case JOIN_ALL_CHANNELS:
+    {
+
+    }
+    default:
+    {
+        LogDebug("WorkerServer : HandleChannelUpdate opcode, unhandled update type %u", updatetype);
+        return;
+    }
+    }
+
+}
+
+void WorkerServer::HandleChannelLFGDungeonStatusReply(WorldPacket& pck)
+{
+    uint8 i = 0;
+    pck >> i;
+
+    if (i == 3)
+        return;
+
+    uint32 guid;
+    pck >> guid;
+
+    RPlayerInfo * pRplayer;
+    pRplayer = sClientMgr.GetRPlayer(guid);
+    if (!pRplayer)
+        return;
+
+    std::string channelname, pass;
+    uint32 dbc_id = 0;
+    uint16 unk;		// some sort of channel type?
+    Channel * chn;
+
+    pck >> dbc_id >> unk;
+    pck >> channelname;
+    pck >> pass;
+
+    chn = channelmgr.GetCreateChannel(channelname.c_str(), pRplayer, dbc_id);
+    if (chn == NULL)
+        return;
+
+    chn->AttemptJoin(pRplayer, pass.c_str());
+    LogDebug("LfgChannelJoin : %s, unk %u", channelname.c_str(), unk);
+}

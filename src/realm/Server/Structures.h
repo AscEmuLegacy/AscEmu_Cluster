@@ -3,6 +3,12 @@ Copyright (c) 2014-2017 AscEmu Team <http://www.ascemu.org/>
 This file is released under the MIT license. See README-MIT for more information.
 */
 
+#ifndef _GAME
+#include "RealmStdAfx.h"
+
+class Channel;
+#endif
+
 struct RPlayerInfo
 {
     uint32 Guid;
@@ -25,17 +31,22 @@ struct RPlayerInfo
     uint32 references;
     uint32 ClientBuild;
     uint32 Team;
+    bool IsAFK;
+    bool IsDND;
+    bool IsGmOn;
+    std::string AFKreason;
+    std::string DNDreason;
 
     void Pack(ByteBuffer& buf)
     {
         buf << Guid << AccountId << Name << PositionX << PositionY << ZoneId << Race << Class << Gender << Latency << GMPermissions
-            << Account_Flags << InstanceId << Level << GuildId << MapId << iInstanceType << ClientBuild << Team;
+            << Account_Flags << InstanceId << Level << GuildId << MapId << iInstanceType << ClientBuild << Team << IsAFK << IsDND << IsGmOn << AFKreason << DNDreason;
     }
 
     size_t Unpack(ByteBuffer & buf)
     {
         buf >> Guid >> AccountId >> Name >> PositionX >> PositionY >> ZoneId >> Race >> Class >> Gender >> Latency >> GMPermissions
-            >> Account_Flags >> InstanceId >> Level >> GuildId >> MapId >> iInstanceType >> ClientBuild >> Team;
+            >> Account_Flags >> InstanceId >> Level >> GuildId >> MapId >> iInstanceType >> ClientBuild >> Team >> IsAFK >> IsDND >> IsGmOn >> AFKreason >> DNDreason;
         return buf.rpos();
     }
 
@@ -49,6 +60,14 @@ struct RPlayerInfo
     Session * GetSession() { return session; }
     uint32 RecoveryMapId;
     LocationVector RecoveryPosition;
+
+    // Channels
+    std::set<Channel*> m_channels;
+
+    void JoinedChannel(Channel* c);
+    void LeftChannel(Channel* c);
+    void CleanupChannels();
+    void OnZoneUpdate(std::string updatename, std::string updatename2,uint32 mapId,uint32 ZoneId, uint32 flags);
 #endif
 };
 
@@ -665,81 +684,6 @@ typedef struct AreaTrigger
     uint32 required_level;
 } AreaTrigger;
 #pragma pack(pop)
-
-enum ChatMsg
-{
-    CHAT_MSG_ADDON = -1,
-    CHAT_MSG_SYSTEM = 0,    // 28, CHAT_MSG_SYSTEM = 0x00
-    CHAT_MSG_SAY = 1,
-    CHAT_MSG_PARTY = 2,
-    CHAT_MSG_RAID = 3,
-    CHAT_MSG_GUILD = 4,
-    CHAT_MSG_OFFICER = 5,
-    CHAT_MSG_YELL = 6,
-    CHAT_MSG_WHISPER = 7,
-    CHAT_MSG_WHISPER_MOB = 8,    // CHAT_MSG_WHISPER_INFORM
-    CHAT_MSG_WHISPER_INFORM = 9,    // CHAT_MSG_REPLY
-    CHAT_MSG_EMOTE = 10,
-    CHAT_MSG_TEXT_EMOTE = 11,
-    CHAT_MSG_MONSTER_SAY = 12,
-    CHAT_MSG_MONSTER_PARTY = 13,
-    CHAT_MSG_MONSTER_YELL = 14,
-    CHAT_MSG_MONSTER_WHISPER = 15,
-    CHAT_MSG_MONSTER_EMOTE = 16,
-    CHAT_MSG_CHANNEL = 17,
-    CHAT_MSG_CHANNEL_JOIN = 18,
-    CHAT_MSG_CHANNEL_LEAVE = 19,
-    CHAT_MSG_CHANNEL_LIST = 20,
-    CHAT_MSG_CHANNEL_NOTICE = 21,
-    CHAT_MSG_CHANNEL_NOTICE_USER = 22,
-    CHAT_MSG_AFK = 23,
-    CHAT_MSG_DND = 24,
-    CHAT_MSG_IGNORED = 25,
-    CHAT_MSG_SKILL = 26,
-    CHAT_MSG_LOOT = 27,
-    CHAT_MSG_MONEY = 28,
-    CHAT_MSG_OPENING = 29,
-    CHAT_MSG_TRADESKILLS = 30,
-    CHAT_MSG_PET_INFO = 31,
-    CHAT_MSG_COMBAT_MISC_INFO = 32,
-    CHAT_MSG_COMBAT_XP_GAIN = 33,
-    CHAT_MSG_COMBAT_HONOR_GAIN = 34,
-    CHAT_MSG_COMBAT_FACTION_CHANGE = 35,
-    CHAT_MSG_BG_EVENT_NEUTRAL = 36,
-    CHAT_MSG_BG_EVENT_ALLIANCE = 37,
-    CHAT_MSG_BG_EVENT_HORDE = 38,
-    CHAT_MSG_RAID_LEADER = 39,
-    CHAT_MSG_RAID_WARNING = 40,
-    CHAT_MSG_RAID_WARNING_WIDESCREEN = 41,
-    CHAT_MSG_RAID_BOSS_EMOTE = 42,
-    CHAT_MSG_FILTERED = 43,
-    CHAT_MSG_BATTLEGROUND = 44,
-    CHAT_MSG_BATTLEGROUND_LEADER = 45,
-    CHAT_MSG_RESTRICTED = 46,
-    CHAT_MSG_ACHIEVEMENT = 48,
-    CHAT_MSG_GUILD_ACHIEVEMENT = 49,
-    CHAT_MSG_PARTY_LEADER = 51
-};
-
-enum Languages
-{
-    LANG_UNIVERSAL = 0x00,
-    LANG_ORCISH = 0x01,
-    LANG_DARNASSIAN = 0x02,
-    LANG_TAURAHE = 0x03,
-    LANG_DWARVISH = 0x06,
-    LANG_COMMON = 0x07,
-    LANG_DEMONIC = 0x08,
-    LANG_TITAN = 0x09,
-    LANG_THELASSIAN = 0x0A,
-    LANG_DRACONIC = 0x0B,
-    LANG_KALIMAG = 0x0C,
-    LANG_GNOMISH = 0x0D,
-    LANG_TROLL = 0x0E,
-    LANG_GUTTERSPEAK = 0x21,
-    LANG_DRAENEI = 0x23,
-    NUM_LANGUAGES = 0x24
-};
 
 #pragma pack(push,1)
 

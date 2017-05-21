@@ -32,6 +32,11 @@ enum WorkerServerOpcodes
     ICMSG_WHISPER,                  // whisper request from worker server
     ICMSG_CHAT,                     // chat request from worker server
 
+    // Channel
+    ICMSG_CHANNEL_ACTION,
+    ICMSG_CHANNEL_UPDATE,
+    ICMSG_CHANNEL_LFG_DUNGEON_STATUS_REPLY,
+
     // WoW Packets
     ICMSG_WOW_PACKET,               //
 
@@ -63,7 +68,25 @@ enum WorkerServerOpcodes
     ISMSG_WHISPER,                  // send whisper request to specific worker
     ISMSG_CHAT,                     // send chat to worker servers
 
+    // Channel
+    ISMSG_CHANNEL_ACTION,
+    ISMSG_CHANNEL_LFG_DUNGEON_STATUS_REQUEST,
+
     IMSG_NUM_TYPES
+};
+
+// Channel
+enum MSG_CHANNEL_ACTION
+{
+    CHANNEL_JOIN,
+    CHANNEL_PART,
+    CHANNEL_SAY
+};
+enum CMSG_CHANNEL_UPDATE
+{
+    UPDATE_CHANNELS_ON_ZONE_CHANGE = 1,
+    PART_ALL_CHANNELS = 2,
+    JOIN_ALL_CHANNELS = 3
 };
 
 #endif		// _WORKER_OPCODES_H

@@ -14,6 +14,27 @@ void Session::InitHandlers()
     Handlers[CMSG_CHAR_CREATE] = &Session::HandleCharacterCreate;
     Handlers[CMSG_ITEM_QUERY_SINGLE] = &Session::HandleItemQuerySingleOpcode;
     Handlers[CMSG_NAME_QUERY] = &Session::HandleNameQueryOpcode;
+
+    // Channels
+    Handlers[CMSG_JOIN_CHANNEL] = &Session::HandleChannelJoin;
+    Handlers[CMSG_LEAVE_CHANNEL] = &Session::HandleChannelLeave;
+    Handlers[CMSG_CHANNEL_LIST] = &Session::HandleChannelList;
+    Handlers[CMSG_CHANNEL_PASSWORD] = &Session::HandleChannelPassword;
+    Handlers[CMSG_CHANNEL_SET_OWNER] = &Session::HandleChannelSetOwner;
+    Handlers[CMSG_CHANNEL_OWNER] = &Session::HandleChannelOwner;
+    Handlers[CMSG_CHANNEL_MODERATOR] = &Session::HandleChannelModerator;
+    Handlers[CMSG_CHANNEL_UNMODERATOR] = &Session::HandleChannelUnmoderator;
+    Handlers[CMSG_CHANNEL_MUTE] = &Session::HandleChannelMute;
+    Handlers[CMSG_CHANNEL_UNMUTE] = &Session::HandleChannelUnmute;
+    Handlers[CMSG_CHANNEL_INVITE] = &Session::HandleChannelInvite;
+    Handlers[CMSG_CHANNEL_KICK] = &Session::HandleChannelKick;
+    Handlers[CMSG_CHANNEL_BAN] = &Session::HandleChannelBan;
+    Handlers[CMSG_CHANNEL_UNBAN] = &Session::HandleChannelUnban;
+    Handlers[CMSG_CHANNEL_ANNOUNCEMENTS] = &Session::HandleChannelAnnounce;
+    Handlers[CMSG_CHANNEL_MODERATE] = &Session::HandleChannelModerate;
+    Handlers[CMSG_GET_CHANNEL_MEMBER_COUNT] = &Session::HandleChannelNumMembersQuery;
+    Handlers[CMSG_CHANNEL_DISPLAY_LIST] = &Session::HandleChannelRosterQuery;
+    Handlers[CMSG_MESSAGECHAT] = &Session::HandleMessagechatOpcode;
 }
 
 LoginErrorCode VerifyName(const char* name, size_t nlen)
@@ -210,5 +231,8 @@ Session::~Session()
 void Session::Disconnect()
 {
     if (m_socket && m_socket->IsConnected())
+    {
         m_socket->Disconnect();
+        sClientMgr.DestroySession(GetSessionId());
+    }
 }

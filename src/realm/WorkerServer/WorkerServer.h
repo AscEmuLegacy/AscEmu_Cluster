@@ -57,4 +57,7 @@ protected:
     void HandleCreatePlayerResult(WorldPacket & pck);
     void HandlePlayerInfo(WorldPacket & pck);
     void Pong(WorldPacket & pck);
+    void HandleChannelAction(WorldPacket & pck);
+    void HandleChannelUpdate(WorldPacket & pck);
+    void HandleChannelLFGDungeonStatusReply(WorldPacket& pck);
 };
