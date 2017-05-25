@@ -53,7 +53,7 @@ Channel::Channel(const char * name, uint32 team, uint32 type_id, uint32 id)
         m_announce = false;
 
         m_flags |= CHANNEL_FLAGS_GENERAL;       // old 0x10;            // general flag
-                                                // flags (0x01 = custom?, 0x04 = trade?, 0x20 = city?, 0x40 = lfg?, , 0x80 = voice?,
+        // flags (0x01 = custom?, 0x04 = trade?, 0x20 = city?, 0x40 = lfg?, , 0x80 = voice?,
 
         if (chat_channels->flags & CHANNEL_DBC_TRADE)
             m_flags |= CHANNEL_FLAGS_TRADE;     // old 0x08;        // trade
@@ -418,13 +418,13 @@ void Channel::Say(RPlayerInfo* plr, const char * message, RPlayerInfo* for_gm_cl
     data.SetOpcode(SMSG_MESSAGECHAT);
     data << uint8(CHAT_MSG_CHANNEL);
     data << uint32(0);        // language
-    data << plr->Guid;    // guid
+    data << uint64(plr->Guid);    // guid
     data << uint32(0);        // rank?
     data << m_name;            // channel name
-    data << plr->Guid;    // guid again?
+    data << uint64(plr->Guid);    // guid again?
     data << uint32(strlen(message) + 1);
     data << message;
-    data << (uint8)(plr->GMPermissions.size() ? 4 : 0);
+    data << (uint8)(plr->IsGmOn ? 4 : 0);
     if (for_gm_client != NULL)
         for_gm_client->GetSession()->SendPacket(&data);
     else
@@ -944,8 +944,8 @@ void Channel::SendToAll(WorldPacket * data)
 	Guard guard(m_lock);
 	for(MemberMap::iterator itr = m_members.begin(); itr != m_members.end(); ++itr)
 	{
-		if( itr->first->GetSession() )
-			itr->first->GetSession()->SendPacket(data);
+        if (itr->first->GetSession())
+            itr->first->GetSession()->SendPacket(data);
 	}
 }
 

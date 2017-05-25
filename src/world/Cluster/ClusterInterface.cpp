@@ -784,45 +784,45 @@ void ClusterInterface::HandleChannelAction(WorldPacket & pck)
 
     switch (action)
     {
-    case CHANNEL_JOIN:
-    {
-        uint32 guid;
-        uint32 cid;
-        Player * pPlayer;
+        case CHANNEL_JOIN:
+        {
+            uint32 guid;
+            uint32 cid;
+            Player * pPlayer;
 
-        pck >> guid;
-        pck >> cid;
+            pck >> guid;
+            pck >> cid;
 
-        pPlayer = objmgr.GetPlayer(guid);
-        if (pPlayer == NULL)
-            return;
+            pPlayer = objmgr.GetPlayer(guid);
+            if (pPlayer == NULL)
+                return;
         
-        pPlayer->JoinedChannel(cid);
-        LogDebug("ClusterInterface : Joined Channel %u \n", cid);
-        break;
+            pPlayer->JoinedChannel(cid);
+            LogDebug("ClusterInterface : Joined Channel %u", cid);
+            break;
 
-    }
-    case CHANNEL_PART:
-    {
-        uint32 guid;
-        uint32 cid;
-        Player * pPlayer;
+        }
+        case CHANNEL_PART:
+        {
+            uint32 guid;
+            uint32 cid;
+            Player * pPlayer;
 
-        pck >> guid;
-        pck >> cid;
+            pck >> guid;
+            pck >> cid;
 
-        pPlayer = objmgr.GetPlayer(guid);
-        if (pPlayer == NULL)
+            pPlayer = objmgr.GetPlayer(guid);
+            if (pPlayer == NULL)
+                return;
+
+            pPlayer->LeftChannel(cid);
+            break;
+        }
+        default:
+        {
+            LogDebug("ClusterInterface : HandleChannelAction opcode, unhandled action %u", action);
             return;
-
-        pPlayer->LeftChannel(cid);
-        break;
-    }
-    default:
-    {
-        LogDebug("ClusterInterface : HandleChannelAction opcode, unhandled action %u", action);
-        return;
-    }
+        }
     }
 }
 

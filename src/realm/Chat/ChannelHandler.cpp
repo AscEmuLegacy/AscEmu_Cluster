@@ -22,8 +22,7 @@ void Session::HandleChannelJoin(WorldPacket& recvPacket)
 	recvPacket >> pass;
 
 	if(sRealmMaster.GmClientChannel.size() && !stricmp(sRealmMaster.GmClientChannel.c_str(), channelname.c_str()) && !m_GMPermissions.size())
-		return;
-		
+		return;	
 
 	chn = channelmgr.GetCreateChannel(channelname.c_str(), m_currentPlayer, dbc_id);
 	if(chn == NULL)
@@ -50,35 +49,35 @@ void Session::HandleChannelLeave(WorldPacket& recvPacket)
 
 void Session::HandleChannelList(WorldPacket& recvPacket)
 {
-	CHECK_PACKET_SIZE(recvPacket, 1);
+    CHECK_PACKET_SIZE(recvPacket, 1);
     std::string channelname;
-	Channel * chn;
+    Channel* chn;
 
-	recvPacket >> channelname;
+    recvPacket >> channelname;
 
-	chn = channelmgr.GetChannel(channelname.c_str(), m_currentPlayer);
-	if( chn != NULL )
-		chn->List(m_currentPlayer);
+    chn = channelmgr.GetChannel(channelname.c_str(), m_currentPlayer);
+    if (chn != NULL)
+        chn->List(m_currentPlayer);
 }
 
 void Session::HandleChannelPassword(WorldPacket& recvPacket)
 {
 	CHECK_PACKET_SIZE(recvPacket, 1);
-    std::string channelname,pass;
-	Channel * chn;
+    std::string channelname, pass;
+    Channel* chn;
 
-	recvPacket >> channelname;
-	recvPacket >> pass;
-	chn = channelmgr.GetChannel(channelname.c_str(),m_currentPlayer);
-	if( chn != NULL )
-		chn->Password(m_currentPlayer, pass.c_str());
+    recvPacket >> channelname;
+    recvPacket >> pass;
+    chn = channelmgr.GetChannel(channelname.c_str(), m_currentPlayer);
+    if (chn)
+        chn->Password(m_currentPlayer, pass.c_str());
 }
 
 void Session::HandleChannelSetOwner(WorldPacket& recvPacket)
 {
 	CHECK_PACKET_SIZE(recvPacket, 1);
     std::string channelname,newp;
-	Channel * chn;
+	Channel* chn;
 	RPlayerInfo* plr;
 
 	recvPacket >> channelname;
@@ -94,11 +93,11 @@ void Session::HandleChannelOwner(WorldPacket& recvPacket)
 {
 	CHECK_PACKET_SIZE(recvPacket, 1);
     std::string channelname,pass;
-	Channel * chn;
+	Channel* chn;
 
 	recvPacket >> channelname;
 	chn = channelmgr.GetChannel(channelname.c_str(),m_currentPlayer);
-	if( chn != NULL )
+	if (chn)
 		chn->GetOwner(m_currentPlayer);
 }
 
@@ -106,7 +105,7 @@ void Session::HandleChannelModerator(WorldPacket& recvPacket)
 {
 	CHECK_PACKET_SIZE(recvPacket, 1);
     std::string channelname,newp;
-	Channel * chn;
+	Channel* chn;
 	RPlayerInfo* plr;
 
 	recvPacket >> channelname;
@@ -114,7 +113,7 @@ void Session::HandleChannelModerator(WorldPacket& recvPacket)
 
 	chn = channelmgr.GetChannel(channelname.c_str(), m_currentPlayer);
 	plr = sClientMgr.GetRPlayer(newp);
-	if( chn != NULL && plr != NULL )
+	if (chn && plr)
 		chn->GiveModerator(m_currentPlayer, plr);
 }
 
@@ -122,7 +121,7 @@ void Session::HandleChannelUnmoderator(WorldPacket& recvPacket)
 {
 	CHECK_PACKET_SIZE(recvPacket, 1);
     std::string channelname,newp;
-	Channel * chn;
+	Channel* chn;
 	RPlayerInfo* plr;
 
 	recvPacket >> channelname;
@@ -130,7 +129,7 @@ void Session::HandleChannelUnmoderator(WorldPacket& recvPacket)
 
 	chn = channelmgr.GetChannel(channelname.c_str(), m_currentPlayer);
 	plr = sClientMgr.GetRPlayer(newp);
-	if( chn != NULL && plr != NULL )
+	if (chn && plr)
 		chn->TakeModerator(m_currentPlayer, plr);
 }
 
@@ -138,7 +137,7 @@ void Session::HandleChannelMute(WorldPacket& recvPacket)
 {
 	CHECK_PACKET_SIZE(recvPacket, 1);
     std::string channelname,newp;
-	Channel * chn;
+	Channel* chn;
 	RPlayerInfo* plr;
 
 	recvPacket >> channelname;
@@ -146,7 +145,7 @@ void Session::HandleChannelMute(WorldPacket& recvPacket)
 
 	chn = channelmgr.GetChannel(channelname.c_str(), m_currentPlayer);
 	plr = sClientMgr.GetRPlayer(newp);
-	if( chn != NULL && plr != NULL )
+	if (chn && plr)
 		chn->Mute(m_currentPlayer, plr);
 }
 
@@ -154,7 +153,7 @@ void Session::HandleChannelUnmute(WorldPacket& recvPacket)
 {
 	CHECK_PACKET_SIZE(recvPacket, 1);
     std::string channelname,newp;
-	Channel * chn;
+	Channel* chn;
 	RPlayerInfo* plr;
 
 	recvPacket >> channelname;
@@ -162,7 +161,7 @@ void Session::HandleChannelUnmute(WorldPacket& recvPacket)
 
 	chn = channelmgr.GetChannel(channelname.c_str(), m_currentPlayer);
 	plr = sClientMgr.GetRPlayer(newp);
-	if( chn != NULL && plr != NULL )
+	if (chn && plr)
 		chn->Unmute(m_currentPlayer, plr);
 }
 
@@ -170,7 +169,7 @@ void Session::HandleChannelInvite(WorldPacket& recvPacket)
 {
 	CHECK_PACKET_SIZE(recvPacket, 1);
     std::string channelname,newp;
-	Channel * chn;
+	Channel* chn;
 	RPlayerInfo* plr;
 
 	recvPacket >> channelname;
@@ -178,14 +177,14 @@ void Session::HandleChannelInvite(WorldPacket& recvPacket)
 
 	chn = channelmgr.GetChannel(channelname.c_str(), m_currentPlayer);
 	plr = sClientMgr.GetRPlayer(newp);
-	if( chn != NULL && plr != NULL )
+	if (chn && plr)
 		chn->Invite(m_currentPlayer, plr);
 }
 void Session::HandleChannelKick(WorldPacket& recvPacket)
 {
 	CHECK_PACKET_SIZE(recvPacket, 1);
     std::string channelname,newp;
-	Channel * chn;
+	Channel* chn;
 	RPlayerInfo* plr;
 
 	recvPacket >> channelname;
@@ -193,7 +192,7 @@ void Session::HandleChannelKick(WorldPacket& recvPacket)
 
 	chn = channelmgr.GetChannel(channelname.c_str(), m_currentPlayer);
 	plr = sClientMgr.GetRPlayer(newp);
-	if( chn != NULL && plr != NULL )
+	if (chn && plr)
 		chn->Kick(m_currentPlayer, plr, false);
 }
 
@@ -201,7 +200,7 @@ void Session::HandleChannelBan(WorldPacket& recvPacket)
 {
 	CHECK_PACKET_SIZE(recvPacket, 1);
     std::string channelname,newp;
-	Channel * chn;
+	Channel* chn;
 	RPlayerInfo* plr;
 
 	recvPacket >> channelname;
@@ -209,7 +208,7 @@ void Session::HandleChannelBan(WorldPacket& recvPacket)
 
 	chn = channelmgr.GetChannel(channelname.c_str(), m_currentPlayer);
 	plr = sClientMgr.GetRPlayer(newp);
-	if( chn != NULL && plr != NULL )
+	if (chn && plr)
 		chn->Kick(m_currentPlayer, plr, true);
 }
 
@@ -217,7 +216,7 @@ void Session::HandleChannelUnban(WorldPacket& recvPacket)
 {
 	CHECK_PACKET_SIZE(recvPacket, 1);
     std::string channelname,newp;
-	Channel * chn;
+	Channel* chn;
 	RPlayerInfo * plr;
 
 	recvPacket >> channelname;
@@ -225,7 +224,7 @@ void Session::HandleChannelUnban(WorldPacket& recvPacket)
 
 	chn = channelmgr.GetChannel(channelname.c_str(), m_currentPlayer);
 	plr = sClientMgr.GetRPlayer(newp);
-	if( chn != NULL && plr != NULL )
+	if (chn && plr)
 		chn->Unban(m_currentPlayer, plr);
 }
 
@@ -233,11 +232,11 @@ void Session::HandleChannelAnnounce(WorldPacket& recvPacket)
 {
 	CHECK_PACKET_SIZE(recvPacket, 1);
     std::string channelname;
-	Channel * chn;
+	Channel* chn;
 	recvPacket >> channelname;
 
 	chn = channelmgr.GetChannel(channelname.c_str(), m_currentPlayer);
-	if( chn != NULL )
+	if (chn)
 		chn->Announce(m_currentPlayer);
 }
 
@@ -245,22 +244,22 @@ void Session::HandleChannelModerate(WorldPacket& recvPacket)
 {
 	CHECK_PACKET_SIZE(recvPacket, 1);
     std::string channelname;
-	Channel * chn;
+	Channel* chn;
 	recvPacket >> channelname;
 
 	chn = channelmgr.GetChannel(channelname.c_str(), m_currentPlayer);
-	if( chn != NULL )
+	if (chn)
 		chn->Moderate(m_currentPlayer);
 }
 
 void Session::HandleChannelRosterQuery(WorldPacket & recvPacket)
 {
     std::string channelname;
-	Channel * chn;
+	Channel* chn;
 	recvPacket >> channelname;
 
 	chn = channelmgr.GetChannel(channelname.c_str(), m_currentPlayer);
-	if( chn != NULL )
+	if (chn)
 		chn->List(m_currentPlayer);
 }
 
@@ -268,10 +267,10 @@ void Session::HandleChannelNumMembersQuery(WorldPacket & recvPacket)
 {
     std::string channel_name;
 	WorldPacket data(SMSG_CHANNEL_MEMBER_COUNT, recvPacket.size() + 4);
-	Channel *chn;
+	Channel* chn;
 	recvPacket >> channel_name;
 	chn = channelmgr.GetChannel(channel_name.c_str(), m_currentPlayer);
-	if( chn != NULL )
+	if (chn)
 	{
 		data << channel_name;
 		data << uint8(chn->m_flags);
